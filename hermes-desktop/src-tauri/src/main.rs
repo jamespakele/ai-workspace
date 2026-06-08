@@ -6,6 +6,7 @@ mod fs;
 mod gateway;
 mod projects;
 mod sessions;
+mod skills;
 
 use gateway::GatewayState;
 use std::sync::Mutex;
@@ -28,6 +29,7 @@ fn main() {
             fs::read_dir,
             gateway::spawn_gateway,
             gateway::kill_gateway,
+            skills::import_skill,
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {
