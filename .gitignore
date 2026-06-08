@@ -1,0 +1,5 @@
+# BMADder
+_bmad/.prompt-tmp.md
+__pycache__/
+*.pyc
+.venv/

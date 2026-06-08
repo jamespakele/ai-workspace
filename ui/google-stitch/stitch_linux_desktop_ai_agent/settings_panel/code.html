@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Hermes - Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-on-surface": "#303032",
+                      "text-secondary": "#A1A1AA",
+                      "secondary": "#adc6ff",
+                      "on-secondary-fixed-variant": "#004395",
+                      "surface-dim": "#131315",
+                      "on-surface-variant": "#ccc3d8",
+                      "surface-container-highest": "#353437",
+                      "on-tertiary-fixed": "#301400",
+                      "surface-bright": "#39393b",
+                      "error": "#EF4444",
+                      "text-muted": "#71717A",
+                      "on-secondary": "#002e6a",
+                      "secondary-fixed": "#d8e2ff",
+                      "on-tertiary": "#4f2500",
+                      "on-primary": "#3f008e",
+                      "inverse-surface": "#e5e1e4",
+                      "surface-raised": "#252529",
+                      "on-tertiary-fixed-variant": "#713700",
+                      "primary": "#d2bbff",
+                      "on-error": "#690005",
+                      "success": "#10B981",
+                      "surface-variant": "#353437",
+                      "on-secondary-container": "#e6ecff",
+                      "border-strong": "#3F3F46",
+                      "outline": "#958da1",
+                      "surface-container-low": "#1b1b1d",
+                      "outline-variant": "#4a4455",
+                      "canvas": "#0F0F11",
+                      "error-container": "#93000a",
+                      "primary-fixed": "#eaddff",
+                      "on-primary-fixed-variant": "#5a00c6",
+                      "on-background": "#e5e1e4",
+                      "tertiary-container": "#a15100",
+                      "primary-fixed-dim": "#d2bbff",
+                      "text-primary": "#EEEEF0",
+                      "surface-tint": "#d2bbff",
+                      "on-error-container": "#ffdad6",
+                      "tertiary-fixed": "#ffdcc6",
+                      "on-primary-fixed": "#25005a",
+                      "surface": "#1C1C1F",
+                      "on-surface": "#e5e1e4",
+                      "border-subtle": "#2A2A2E",
+                      "secondary-container": "#0566d9",
+                      "surface-container-high": "#2a2a2c",
+                      "nous-purple": "#7C3AED",
+                      "primary-container": "#7c3aed",
+                      "tertiary-fixed-dim": "#ffb784",
+                      "secondary-fixed-dim": "#adc6ff",
+                      "surface-container-lowest": "#0e0e10",
+                      "on-tertiary-container": "#ffe0cd",
+                      "background": "#131315",
+                      "on-primary-container": "#ede0ff",
+                      "on-secondary-fixed": "#001a42",
+                      "inverse-primary": "#732ee4",
+                      "surface-container": "#201f21",
+                      "tertiary": "#ffb784",
+                      "sidebar": "#161618"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "status-bar-height": "28px",
+                      "padding-xs": "4px",
+                      "sidebar-width": "260px",
+                      "gutter": "12px",
+                      "padding-container": "16px",
+                      "padding-compact": "8px"
+              },
+              "fontFamily": {
+                      "status-bar": [
+                              "JetBrains Mono"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "code-block": [
+                              "JetBrains Mono"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "tool-output": [
+                              "JetBrains Mono"
+                      ]
+              },
+              "fontSize": {
+                      "status-bar": [
+                              "11px",
+                              {
+                                      "lineHeight": "14px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-sm": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "code-block": [
+                              "13px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "22px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-caps": [
+                              "11px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "tool-output": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.canvas');
+            color: theme('colors.text-primary');
+        }
+        
+        /* Custom Scrollbar for dense UI */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: theme('colors.surface-container-highest');
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: theme('colors.border-strong');
+        }
+        
+        /* Focus ring override */
+        input:focus, select:focus, textarea:focus {
+            outline: none !important;
+            box-shadow: none !important;
+            border-color: theme('colors.nous-purple') !important;
+        }
+        
+        /* Dimmed backdrop animation */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        
+        .backdrop-dim {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+        
+        .drawer-slide {
+            animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col font-body-md text-body-md text-text-primary">
+<!-- Mock Background App Content (to show dimming effect) -->
+<div class="flex-1 flex h-[calc(100vh-28px)] filter blur-[2px] opacity-40 transition-all duration-300">
+<!-- Sidebar placeholder -->
+<div class="w-[260px] bg-sidebar border-r border-border-subtle h-full"></div>
+<!-- Main chat placeholder -->
+<div class="flex-1 bg-background h-full p-8">
+<div class="max-w-[800px] mx-auto space-y-6">
+<div class="w-2/3 h-24 bg-surface rounded border border-border-subtle"></div>
+<div class="w-3/4 h-32 bg-surface rounded border border-border-subtle ml-auto"></div>
+</div>
+</div>
+</div>
+<!-- Settings Drawer Overlay -->
+<div class="fixed inset-0 z-40 bg-black/50 backdrop-dim flex justify-end">
+<!-- Settings Drawer Panel -->
+<aside class="w-[480px] h-full bg-surface-container shadow-2xl border-l border-border-strong flex flex-col drawer-slide">
+<!-- Drawer Header -->
+<header class="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-surface-container">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-nous-purple">settings</span>
+<h2 class="font-headline-md text-headline-md text-text-primary">Settings</h2>
+</div>
+<button class="p-1 rounded text-text-muted hover:text-text-primary hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-xl">close</span>
+</button>
+</header>
+<!-- Drawer Content (Scrollable) -->
+<div class="flex-1 overflow-y-auto px-6 py-6 space-y-8">
+<!-- Section: Models -->
+<section class="space-y-4">
+<h3 class="font-label-caps text-label-caps text-text-muted uppercase tracking-wider">Language Models</h3>
+<div class="space-y-3 bg-surface p-4 rounded-lg border border-border-subtle">
+<div class="flex flex-col gap-1.5">
+<label class="text-body-sm text-text-secondary">Default Model</label>
+<div class="relative">
+<select class="w-full bg-surface-container-low border border-border-strong rounded px-3 py-2 text-text-primary appearance-none cursor-pointer hover:border-outline transition-colors text-sm">
+<optgroup label="Anthropic">
+<option value="claude-3-opus">Claude 3 Opus</option>
+<option selected="" value="claude-3-sonnet">Claude 3.5 Sonnet</option>
+<option value="claude-3-haiku">Claude 3 Haiku</option>
+</optgroup>
+<optgroup label="Local (Ollama)">
+<option value="llama-3">Llama 3 8B</option>
+<option value="mistral">Mistral 7B</option>
+</optgroup>
+<optgroup label="OpenRouter">
+<option value="gpt-4o">GPT-4o</option>
+</optgroup>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none text-lg">arrow_drop_down</span>
+</div>
+</div>
+<div class="flex flex-col gap-1.5 pt-2">
+<label class="text-body-sm text-text-secondary flex justify-between">
+<span>Anthropic API Key</span>
+<span class="text-success text-xs flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">check_circle</span> Valid</span>
+</label>
+<div class="relative flex items-center">
+<input class="w-full bg-surface-container-low border border-border-strong rounded pl-3 pr-10 py-2 text-text-primary font-code-block text-code-block focus:border-nous-purple transition-colors" type="password" value="sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxx"/>
+<button class="absolute right-2 p-1 text-text-muted hover:text-text-primary">
+<span class="material-symbols-outlined text-sm">visibility</span>
+</button>
+</div>
+</div>
+<div class="flex flex-col gap-1.5 pt-2">
+<label class="text-body-sm text-text-secondary flex justify-between">
+<span>OpenRouter API Key</span>
+<span class="text-text-muted text-xs">Optional</span>
+</label>
+<div class="relative flex items-center">
+<input class="w-full bg-surface-container-low border border-border-strong rounded pl-3 pr-10 py-2 text-text-primary font-code-block text-code-block focus:border-nous-purple transition-colors placeholder:text-text-muted/50" placeholder="sk-or-v1-..." type="password"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Section: Project Environment -->
+<section class="space-y-4">
+<h3 class="font-label-caps text-label-caps text-text-muted uppercase tracking-wider">Project Environment</h3>
+<div class="space-y-4 bg-surface p-4 rounded-lg border border-border-subtle">
+<div class="flex flex-col gap-1.5">
+<label class="text-body-sm text-text-secondary">Default Projects Directory</label>
+<div class="flex gap-2">
+<input class="flex-1 bg-surface-container-low border border-border-strong rounded px-3 py-2 text-text-primary font-code-block text-code-block focus:border-nous-purple transition-colors" readonly="" type="text" value="~/.hermes/projects"/>
+<button class="px-3 py-2 bg-surface-container-high hover:bg-surface-raised border border-border-strong rounded text-text-primary transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">folder_open</span>
+</button>
+</div>
+<p class="text-xs text-text-muted mt-1">Where Hermes stores project configurations and session state.</p>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-body-sm text-text-secondary">Active Project Path Override</label>
+<div class="flex gap-2">
+<input class="flex-1 bg-surface-container-low border border-border-strong rounded px-3 py-2 text-text-primary font-code-block text-code-block focus:border-nous-purple transition-colors placeholder:text-text-muted/50" placeholder="/path/to/local/repo" type="text"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Section: Appearance -->
+<section class="space-y-4">
+<h3 class="font-label-caps text-label-caps text-text-muted uppercase tracking-wider">Appearance</h3>
+<div class="grid grid-cols-3 gap-3">
+<button class="flex flex-col items-center justify-center gap-2 p-3 rounded border border-border-strong bg-surface-container-low hover:bg-surface-raised text-text-muted hover:text-text-primary transition-all">
+<span class="material-symbols-outlined">light_mode</span>
+<span class="text-body-sm">Light</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-3 rounded border border-nous-purple bg-surface-raised text-nous-purple transition-all shadow-[0_0_0_1px_theme('colors.nous-purple')]">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dark_mode</span>
+<span class="text-body-sm font-medium">Dark</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-3 rounded border border-border-strong bg-surface-container-low hover:bg-surface-raised text-text-muted hover:text-text-primary transition-all">
+<span class="material-symbols-outlined">desktop_windows</span>
+<span class="text-body-sm">System</span>
+</button>
+</div>
+</section>
+<!-- Section: Advanced -->
+<section class="space-y-4 pt-4 border-t border-border-subtle">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-body-md text-text-primary">Local Gateway Connection</span>
+<span class="text-xs text-text-muted">ws://localhost:8765</span>
+</div>
+<button class="px-3 py-1.5 text-xs font-medium rounded border border-border-strong bg-surface hover:bg-surface-raised text-text-secondary transition-colors">
+                            Test Connection
+                        </button>
+</div>
+</section>
+</div>
+<!-- Drawer Footer -->
+<footer class="p-4 border-t border-border-subtle bg-surface-container flex justify-end gap-3">
+<button class="px-4 py-2 rounded text-text-secondary hover:text-text-primary hover:bg-surface transition-colors text-sm font-medium">
+                    Cancel
+                </button>
+<button class="px-4 py-2 rounded bg-nous-purple text-white hover:bg-inverse-primary transition-colors text-sm font-medium shadow-sm">
+                    Save Changes
+                </button>
+</footer>
+</aside>
+</div>
+<!-- Status Bar Component (from JSON) -->
+<footer class="fixed bottom-0 left-0 w-full h-[28px] z-50 border-t border-border-strong bg-surface-container-lowest dark:bg-surface-container-lowest flex items-center justify-between px-3 overflow-hidden text-status-bar font-status-bar text-text-secondary dark:text-text-secondary">
+<div class="flex items-center gap-4">
+<span class="font-bold">Hermes AI • Connected: Localhost:11434</span>
+<div class="flex items-center gap-4 border-l border-border-strong pl-4">
+<span class="text-text-muted">Model: Llama-3-70B</span>
+<span class="text-text-muted">Project: hermes-core</span>
+</div>
+</div>
+<div class="flex items-center">
+<span class="text-success flex items-center gap-1.5">
+<div class="w-1.5 h-1.5 rounded-full bg-success"></div>
+                Status: Idle
+            </span>
+</div>
+</footer>
+</body></html>

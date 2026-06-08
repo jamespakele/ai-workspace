@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Hermes Desktop</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#303032",
+                        "text-secondary": "#A1A1AA",
+                        "secondary": "#adc6ff",
+                        "on-secondary-fixed-variant": "#004395",
+                        "surface-dim": "#131315",
+                        "on-surface-variant": "#ccc3d8",
+                        "surface-container-highest": "#353437",
+                        "on-tertiary-fixed": "#301400",
+                        "surface-bright": "#39393b",
+                        "error": "#EF4444",
+                        "text-muted": "#71717A",
+                        "on-secondary": "#002e6a",
+                        "secondary-fixed": "#d8e2ff",
+                        "on-tertiary": "#4f2500",
+                        "on-primary": "#3f008e",
+                        "inverse-surface": "#e5e1e4",
+                        "surface-raised": "#252529",
+                        "on-tertiary-fixed-variant": "#713700",
+                        "primary": "#d2bbff",
+                        "on-error": "#690005",
+                        "success": "#10B981",
+                        "surface-variant": "#353437",
+                        "on-secondary-container": "#e6ecff",
+                        "border-strong": "#3F3F46",
+                        "outline": "#958da1",
+                        "surface-container-low": "#1b1b1d",
+                        "outline-variant": "#4a4455",
+                        "canvas": "#0F0F11",
+                        "error-container": "#93000a",
+                        "primary-fixed": "#eaddff",
+                        "on-primary-fixed-variant": "#5a00c6",
+                        "on-background": "#e5e1e4",
+                        "tertiary-container": "#a15100",
+                        "primary-fixed-dim": "#d2bbff",
+                        "text-primary": "#EEEEF0",
+                        "surface-tint": "#d2bbff",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed": "#ffdcc6",
+                        "on-primary-fixed": "#25005a",
+                        "surface": "#1C1C1F",
+                        "on-surface": "#e5e1e4",
+                        "border-subtle": "#2A2A2E",
+                        "secondary-container": "#0566d9",
+                        "surface-container-high": "#2a2a2c",
+                        "nous-purple": "#7C3AED",
+                        "primary-container": "#7c3aed",
+                        "tertiary-fixed-dim": "#ffb784",
+                        "secondary-fixed-dim": "#adc6ff",
+                        "surface-container-lowest": "#0e0e10",
+                        "on-tertiary-container": "#ffe0cd",
+                        "background": "#131315",
+                        "on-primary-container": "#ede0ff",
+                        "on-secondary-fixed": "#001a42",
+                        "inverse-primary": "#732ee4",
+                        "surface-container": "#201f21",
+                        "tertiary": "#ffb784",
+                        "sidebar": "#161618"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "status-bar-height": "28px",
+                        "padding-xs": "4px",
+                        "sidebar-width": "260px",
+                        "gutter": "12px",
+                        "padding-container": "16px",
+                        "padding-compact": "8px"
+                    },
+                    "fontFamily": {
+                        "status-bar": ["JetBrains Mono"],
+                        "body-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "code-block": ["JetBrains Mono"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "tool-output": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "status-bar": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "headline-md": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "code-block": ["13px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "headline-lg": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-caps": ["11px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "tool-output": ["12px", { "lineHeight": "16px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-text-primary font-body-md text-body-md overflow-hidden flex flex-col h-screen">
+<div class="flex flex-1 overflow-hidden">
+<!-- Sidebar -->
+<aside class="flex flex-col h-full w-[260px] border-r border-border-subtle bg-sidebar flex-shrink-0">
+<!-- Project Switcher -->
+<div class="p-gutter border-b border-border-subtle flex items-center justify-between cursor-pointer hover:bg-surface-container-high transition-colors duration-150">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-nous-purple" data-icon="account_tree">account_tree</span>
+<span class="font-headline-md text-headline-md text-text-primary truncate">hermes-core</span>
+</div>
+<span class="material-symbols-outlined text-text-muted" data-icon="unfold_more">unfold_more</span>
+</div>
+<div class="flex-1 overflow-y-auto overflow-x-hidden p-gutter space-y-6">
+<!-- File Tree -->
+<div>
+<h3 class="font-label-caps text-label-caps text-text-muted mb-3 flex items-center justify-between uppercase">
+                        Explorer
+                        <div class="flex space-x-1">
+<span class="material-symbols-outlined text-text-muted hover:text-text-primary cursor-pointer text-[16px]" data-icon="note_add">note_add</span>
+<span class="material-symbols-outlined text-text-muted hover:text-text-primary cursor-pointer text-[16px]" data-icon="create_new_folder">create_new_folder</span>
+</div>
+</h3>
+<div class="space-y-1 font-body-sm text-body-sm text-text-secondary">
+<div class="flex items-center space-x-2 cursor-pointer hover:bg-surface-container-high py-1 px-2 rounded-DEFAULT -ml-2 text-text-primary">
+<span class="material-symbols-outlined text-[18px]" data-icon="folder_open">folder_open</span>
+<span>src</span>
+</div>
+<div class="pl-6 space-y-1">
+<div class="flex items-center space-x-2 cursor-pointer bg-surface py-1 px-2 rounded-DEFAULT -ml-2 text-text-primary font-medium">
+<span class="material-symbols-outlined text-[16px] text-nous-purple" data-icon="description">description</span>
+<span>main.py</span>
+</div>
+<div class="flex items-center space-x-2 cursor-pointer hover:bg-surface-container-high py-1 px-2 rounded-DEFAULT -ml-2">
+<span class="material-symbols-outlined text-[16px]" data-icon="description">description</span>
+<span>agent.py</span>
+</div>
+<div class="flex items-center space-x-2 cursor-pointer hover:bg-surface-container-high py-1 px-2 rounded-DEFAULT -ml-2">
+<span class="material-symbols-outlined text-[16px]" data-icon="description">description</span>
+<span>utils.ts</span>
+</div>
+</div>
+<div class="flex items-center space-x-2 cursor-pointer hover:bg-surface-container-high py-1 px-2 rounded-DEFAULT -ml-2">
+<span class="material-symbols-outlined text-[18px]" data-icon="folder">folder</span>
+<span>tests</span>
+</div>
+<div class="flex items-center space-x-2 cursor-pointer hover:bg-surface-container-high py-1 px-2 rounded-DEFAULT -ml-2 text-text-muted">
+<span class="material-symbols-outlined text-[18px]" data-icon="folder">folder</span>
+<span>node_modules</span>
+</div>
+<div class="flex items-center space-x-2 cursor-pointer hover:bg-surface-container-high py-1 px-2 rounded-DEFAULT -ml-2">
+<span class="material-symbols-outlined text-[16px]" data-icon="description">description</span>
+<span>package.json</span>
+</div>
+</div>
+</div>
+<!-- Session History -->
+<div>
+<h3 class="font-label-caps text-label-caps text-text-muted mb-3 flex items-center justify-between uppercase">
+                        Recent Chats
+                        <span class="material-symbols-outlined text-text-muted hover:text-text-primary cursor-pointer text-[16px]" data-icon="add">add</span>
+</h3>
+<div class="space-y-1 font-body-sm text-body-sm text-text-secondary">
+<div class="flex items-center justify-between cursor-pointer bg-surface-container-high py-1 px-2 rounded-DEFAULT -ml-2 text-text-primary">
+<span class="truncate">Implement tool calling</span>
+<span class="text-[10px] text-text-muted">2h</span>
+</div>
+<div class="flex items-center justify-between cursor-pointer hover:bg-surface-container-high py-1 px-2 rounded-DEFAULT -ml-2">
+<span class="truncate">Debug WebSocket connection</span>
+<span class="text-[10px] text-text-muted">Yesterday</span>
+</div>
+<div class="flex items-center justify-between cursor-pointer hover:bg-surface-container-high py-1 px-2 rounded-DEFAULT -ml-2">
+<span class="truncate">Refactor agent loop</span>
+<span class="text-[10px] text-text-muted">3 days</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Sidebar Footer -->
+<div class="p-gutter border-t border-border-subtle mt-auto">
+<button class="w-full bg-nous-purple hover:bg-primary-container text-white rounded-DEFAULT py-2 px-4 flex items-center justify-center space-x-2 transition-colors duration-150">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+<span>New Chat</span>
+</button>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col bg-canvas relative overflow-hidden">
+<!-- Chat Header -->
+<header class="flex justify-between items-center w-full px-4 h-12 border-b border-border-subtle bg-background z-10 flex-shrink-0">
+<div class="flex items-center space-x-4">
+<div class="font-headline-md text-headline-md font-bold text-text-primary">Implement tool calling</div>
+</div>
+<div class="flex items-center space-x-3 text-text-muted">
+<span class="material-symbols-outlined cursor-pointer hover:text-text-primary" data-icon="history">history</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-text-primary" data-icon="more_horiz">more_horiz</span>
+</div>
+</header>
+<!-- Chat Thread -->
+<div class="flex-1 overflow-y-auto px-4 py-6 md:px-8">
+<div class="max-w-[800px] mx-auto space-y-8">
+<!-- User Message -->
+<div class="flex justify-end">
+<div class="bg-surface border border-border-subtle rounded-lg p-4 max-w-[85%]">
+<p>Can you list the files in the current directory and then summarize what we are building based on the README?</p>
+</div>
+</div>
+<!-- Assistant 'Thinking' Block -->
+<div class="flex justify-start">
+<div class="max-w-[85%] border-l-2 border-dashed border-border-subtle pl-4 py-2">
+<div class="flex items-center space-x-2 text-text-muted cursor-pointer hover:text-text-secondary transition-colors duration-150 mb-1">
+<span class="material-symbols-outlined text-[18px] animate-pulse" data-icon="psychology">psychology</span>
+<span class="font-body-sm text-body-sm font-medium">Hermes is thinking...</span>
+<span class="material-symbols-outlined text-[18px]" data-icon="expand_more">expand_more</span>
+</div>
+<p class="font-body-sm text-body-sm text-text-muted">I need to use the `list_files` tool to see the current directory contents, then I should probably read the `README.md` if it exists to provide a summary.</p>
+</div>
+</div>
+<!-- Tool Call Card -->
+<div class="flex justify-start w-full">
+<div class="w-full max-w-[85%] bg-surface border border-border-subtle rounded-lg overflow-hidden flex flex-col">
+<div class="flex items-center justify-between bg-surface-container-low px-4 py-2 border-b border-border-subtle cursor-pointer">
+<div class="flex items-center space-x-3 text-text-secondary">
+<span class="material-symbols-outlined text-[18px]" data-icon="build">build</span>
+<span class="font-code-block text-code-block font-bold">list_files</span>
+<span class="font-code-block text-code-block text-text-muted text-[11px]">{"path": "."}</span>
+</div>
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-success text-[16px]" data-icon="check_circle">check_circle</span>
+<span class="material-symbols-outlined text-text-muted hover:text-text-primary" data-icon="expand_less">expand_less</span>
+</div>
+</div>
+<div class="p-0 bg-surface-dim overflow-x-auto">
+<pre class="font-tool-output text-tool-output text-text-secondary p-4 m-0 leading-relaxed"><code>[
+  {
+    "name": "src",
+    "type": "directory"
+  },
+  {
+    "name": "tests",
+    "type": "directory"
+  },
+  {
+    "name": "README.md",
+    "type": "file",
+    "size": 4251
+  },
+  {
+    "name": "package.json",
+    "type": "file",
+    "size": 842
+  }
+]</code></pre>
+</div>
+</div>
+</div>
+<!-- Assistant Response -->
+<div class="flex justify-start">
+<div class="max-w-[85%] space-y-4">
+<p>I found the following main items in your directory:</p>
+<ul class="list-disc pl-5 space-y-1">
+<li><code>src/</code> directory</li>
+<li><code>tests/</code> directory</li>
+<li><code>README.md</code></li>
+<li><code>package.json</code></li>
+</ul>
+<p>Based on standard project structures, it looks like a Node.js or TypeScript project. Let me read the README to give you a specific summary of what we are building.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Composer Area -->
+<div class="px-4 pb-4 md:px-8 bg-gradient-to-t from-canvas via-canvas to-transparent pt-6 relative z-20">
+<div class="max-w-[800px] mx-auto relative">
+<!-- File Chips -->
+<div class="flex flex-wrap gap-2 mb-2 absolute -top-8 left-0">
+<div class="flex items-center space-x-1 bg-surface border border-border-subtle rounded px-2 py-1 shadow-sm">
+<span class="material-symbols-outlined text-[14px] text-nous-purple" data-icon="description">description</span>
+<span class="font-code-block text-code-block text-[11px] text-text-secondary">main.py</span>
+<span class="material-symbols-outlined text-[14px] text-text-muted hover:text-text-primary cursor-pointer ml-1" data-icon="close">close</span>
+</div>
+<div class="flex items-center space-x-1 bg-surface border border-border-subtle rounded px-2 py-1 shadow-sm">
+<span class="material-symbols-outlined text-[14px] text-secondary" data-icon="code">code</span>
+<span class="font-code-block text-code-block text-[11px] text-text-secondary">utils.ts</span>
+<span class="material-symbols-outlined text-[14px] text-text-muted hover:text-text-primary cursor-pointer ml-1" data-icon="close">close</span>
+</div>
+</div>
+<!-- Composer Input -->
+<div class="bg-surface border border-border-subtle rounded-xl p-2 focus-within:border-nous-purple focus-within:ring-1 focus-within:ring-nous-purple transition-all duration-200 flex flex-col shadow-sm">
+<textarea class="w-full bg-transparent border-none focus:ring-0 resize-none font-body-md text-body-md text-text-primary placeholder-text-muted min-h-[60px] p-2" placeholder="Ask Hermes anything... (Press / for commands)"></textarea>
+<div class="flex justify-between items-center mt-2 px-2">
+<div class="flex space-x-2 text-text-muted">
+<button class="hover:text-text-primary transition-colors p-1 rounded hover:bg-surface-container-high" title="Attach file">
+<span class="material-symbols-outlined text-[20px]" data-icon="attach_file">attach_file</span>
+</button>
+<button class="hover:text-text-primary transition-colors p-1 rounded hover:bg-surface-container-high" title="Use tools">
+<span class="material-symbols-outlined text-[20px]" data-icon="build">build</span>
+</button>
+</div>
+<div class="flex items-center space-x-3 text-text-muted">
+<span class="font-body-sm text-[11px] opacity-70 hidden sm:inline-block">Return to send, Shift+Return for newline</span>
+<button class="bg-nous-purple hover:bg-primary-container text-white p-1.5 rounded-DEFAULT transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="send">send</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Status Bar -->
+<footer class="flex items-center justify-between px-3 w-full h-[28px] overflow-hidden border-t border-border-strong bg-surface-container-lowest flex-shrink-0 z-50 font-status-bar text-status-bar text-text-secondary">
+<div class="flex items-center space-x-4">
+<div class="flex items-center space-x-1.5 cursor-pointer hover:text-text-primary transition-colors">
+<span class="w-2 h-2 rounded-full bg-success"></span>
+<span>claude-sonnet-4-6 via anthropic</span>
+<span class="material-symbols-outlined text-[12px]" data-icon="arrow_drop_down">arrow_drop_down</span>
+</div>
+<span class="opacity-30">|</span>
+<span class="font-bold">hermes-core</span>
+<span class="opacity-30">|</span>
+<span class="text-text-muted">Session: a8f9e2b</span>
+</div>
+<div class="flex items-center space-x-4">
+<span class="text-text-muted">Tokens: 4,201 / 100k</span>
+<span class="opacity-30">|</span>
+<span class="text-success">Connected</span>
+</div>
+</footer>
+</body></html>
