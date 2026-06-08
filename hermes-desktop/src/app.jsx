@@ -1,4 +1,7 @@
+import { useState } from "react";
+
 import { Sidebar } from "./components/sidebar";
+import { SettingsPanel } from "./components/settings";
 import { StatusBar } from "./components/statusbar";
 import { Message } from "./components/message";
 import { ToolCard } from "./components/toolcard";
@@ -15,6 +18,8 @@ const messages = [
 ];
 
 export default function App() {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
   return (
     <div className="flex min-h-screen flex-col bg-canvas text-text">
       <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -42,7 +47,11 @@ export default function App() {
           <Composer />
         </main>
       </div>
-      <StatusBar />
+      <StatusBar onSettingsOpen={() => setSettingsOpen(true)} />
+      <SettingsPanel
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
     </div>
   );
 }
