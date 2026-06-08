@@ -1,7 +1,8 @@
 ---
 story_id: "STORY-0007"
 title: "Skill Importer"
-status: "PENDING_QA"
+status: "COMPLETED"
+qa_status: "PASS"
 po_alignment: "APPROVED"
 sm_reviewed: "2026-06-08"
 created_at: "2026-06-08"
@@ -374,3 +375,40 @@ claude-sonnet-4-6
 - `hermes-desktop/src-tauri/src/skills.rs`
 - `hermes-desktop/src-tauri/src/main.rs`
 - `hermes-desktop/src/components/settings.jsx`
+
+## QA Notes
+
+**QA Result: PASS** | Reviewed: 2026-06-08 | Reviewer: automated QA pipeline
+
+### What was tested
+
+1. **Static code review** — all 5 implementation files read and verified line-by-line against each numbered AC.
+2. **Build verification** — `npm run build` ✅, `cargo fmt --all --check` ✅ (from `src-tauri/`), `cargo build --release` with documented sysroot env ✅ (completed in 24s, no errors).
+3. **AC-by-AC verification** — all 11 ACs passed; details below.
+4. **Regression check** — verified all 9 prior Tauri commands still registered in `main.rs`; existing settings form fields unchanged in `settings.jsx`.
+
+### AC Verification Results
+
+| AC | Result | Notes |
+|----|--------|-------|
+| 1 | ✅ PASS | `zip = "2"` at Cargo.toml line 21 |
+| 2 | ✅ PASS | `SkillImportResult` struct correct; `import_skill` signature matches; `mod skills;` and handler registration confirmed in `main.rs` |
+| 3 | ✅ PASS | `read_skill_md` does case-insensitive match (`to_ascii_lowercase()`); all three error strings exact: `"No SKILL.md found in zip"`, `"'name:' field not found in SKILL.md frontmatter"`, I/O errors via `map_err(|e| e.to_string())` |
+| 4 | ✅ PASS | `__MACOSX` skip before path ops; zip-slip guard inspects `Path::new(entry.name()).components()` matching `ParentDir | RootDir | Prefix(_)` **before** `skill_dir.join(entry_path)`; `io::copy` used; dirs created as needed |
+| 5 | ✅ PASS | `<section>` placed after `mt-6 flex justify-end gap-3` div, inside `<Dialog.Content>`; heading present; drop zone with dashed border; browse button present; always visible |
+| 6 | ✅ PASS | `openDialog({ multiple: false, filters: [{ name: 'Skill Files', extensions: ['skill'] }] })`; null-cancellation guard present |
+| 7 | ✅ PASS | `useEffect` guarded by `if (!open) return`; three listeners set up via `Promise.all`; first `.skill` path found and passed to `doImport`; cleanup calls all `unlisten()` functions with `cancelled` race guard |
+| 8 | ✅ PASS | Name: `font-mono font-semibold text-accent` ✓; triggers: `font-mono text-sm text-text` ✓; "(none found)" in `text-muted` ✓; advisory div has exact classes `text-[13px] text-yellow-400 bg-yellow-400/10 border border-yellow-400/30 rounded-lg px-3 py-2 mt-2` ✓ |
+| 9 | ✅ PASS | Error div has exact classes `text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2` ✓ |
+| 10 | ✅ PASS | `isDragging` toggled on `drag-enter`/`drag-leave`/`drag-drop`; conditional classes `border-accent bg-accent/5` vs `border-border bg-canvas` applied correctly |
+| 11 | ✅ PASS | All three build commands pass as documented |
+
+### Residual Risks / Cosmetic Deviations (non-blocking)
+
+The following deviations from the Design Tokens section of Dev Notes are cosmetic and do not affect any numbered AC:
+
+1. **Section heading CSS**: Implementation uses `text-base font-semibold text-text`; Design Tokens specified `text-xs font-semibold uppercase tracking-widest text-muted mb-3`. The heading is visually larger and non-uppercase.
+2. **Drop zone padding/radius**: Implementation uses `rounded-2xl px-4 py-5`; Design Tokens specified `rounded-xl p-6 text-center text-muted text-sm` on the outer div. Drop zone interior text lacks `text-center` alignment.
+3. **Drop zone idle text**: Implementation shows "Drop a `.skill` file anywhere in the window." + "Hermes Desktop will extract the skill into `~/.hermes/skills`." Design Tokens specified "Drop a .skill file here or use the button below".
+
+These are presentational differences only. All functional behavior is correct. Confidence: **HIGH**.

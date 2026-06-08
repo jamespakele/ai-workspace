@@ -105,3 +105,20 @@
 2026-06-08T16:34:45Z | QA_ITER | STORY-0006 | QA_START | QA via claude opus
 2026-06-08T17:00:00Z | QA | STORY-0006 | QA_PASS | All 11 ACs verified via static analysis and npm run build. Minor cosmetic deviation in error bubble (text-text vs text-red-400); non-blocking. No regressions in prior story hook/wiring. Story status→COMPLETED.
 2026-06-08T16:37:53Z | QA_ITER | STORY-0006 | QA_PASS | Completed
+2026-06-08T16:37:53Z | GIT | STORY-0006 | COMMIT | story(STORY-0006): QA PASS
+2026-06-08T16:37:55Z | GIT | STORY-0006 | PUSH | ok
+2026-06-08T16:37:55Z | ORCH | STORY-0006 | STORY_COMPLETE | Committed
+2026-06-08T16:37:55Z | SM_NEXT | - | SM_NEXT_START | Creating next story via claude
+2026-06-08T16:45:00Z | SM_NEXT | STORY-0007 | SM_NEXT | created STORY-0007 -- Skill Importer
+2026-06-08T16:42:15Z | SM_NEXT | STORY-0007 | SM_NEXT_DONE | Story created
+2026-06-08T16:42:15Z | SM_ITER | STORY-0007 | SM_START | SM writing/revising via claude
+2026-06-08T17:05:00Z | SM_ITER | STORY-0007 | SM_DONE | Story reviewed and improved: (1) CRITICAL FIX — zip-slip guard in Rust code snippet was broken; PathBuf::starts_with does not resolve ".." so a path like "myskill/../../.ssh/key" would falsely pass — replaced with component-level check on entry.name() before joining with skill_dir; updated AC#4 wording and Zip-Slip Security Note to match, (2) fixed Browse button style — changed "secondary variant" (ambiguous; Save button uses default variant) to variant="outline" matching Cancel button's secondary prominence, (3) added exact settings.jsx insertion point to AC#5 ("after the mt-6 flex justify-end gap-3 button row, last element before </Dialog.Content>"). Status: DRAFT, po_alignment: PENDING
+2026-06-08T16:46:29Z | SM_ITER | STORY-0007 | SM_DONE | Done
+2026-06-08T16:46:29Z | PO_ITER | STORY-0007 | PO_START | PO reviewing via claude
+2026-06-08T17:10:00Z | PO_ITER | STORY-0007 | PO_APPROVED | All 8 criteria passed: PRD §6.8 I1-I4 mapped, architecture-consistent (correct Tauri command/dialog/event patterns, ~/.hermes/skills/<name>/ destination, no reload.skills per arch §9 Q5), 11 numbered testable ACs, scope bounded to 4 files, all upstream dependencies COMPLETE (STORY-0001 sysroot, STORY-0002 settings.jsx, STORY-0004 dirs crate, STORY-0005 plugin-dialog), zip-slip guard correctly implemented, no duplicate scope. status→READY_FOR_DEV
+2026-06-08T16:48:12Z | PO_ITER | STORY-0007 | PO_APPROVED | Story approved
+2026-06-08T16:48:12Z | DEV_ITER | STORY-0007 | DEV_START | Dev via codex
+2026-06-08T16:53:03Z | DEV_ITER | STORY-0007 | DEV_DONE | PENDING_QA
+2026-06-08T16:53:03Z | QA_ITER | STORY-0007 | QA_START | QA via claude opus
+2026-06-08T17:15:00Z | QA_ITER | STORY-0007 | QA_PASS | All 11 ACs verified: zip dep, SkillImportResult struct, SKILL.md parsing (exact error strings), zip-slip guard (component-based, pre-join), Settings Skills section, file picker, drag-drop listeners, success/error display, drop zone feedback, build checks. npm run build ✅, cargo fmt --check ✅, cargo build --release (sysroot) ✅. Minor Design Token deviations in heading CSS and drop zone text (non-blocking). No regressions. status→COMPLETED
+2026-06-08T16:58:00Z | QA_ITER | STORY-0007 | QA_PASS | Completed
