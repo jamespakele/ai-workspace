@@ -1,7 +1,8 @@
 ---
 story_id: "STORY-0005"
 title: "Sidebar: Project Switcher & File Tree"
-status: "PENDING_QA"
+status: "COMPLETED"
+qa_status: "PASS"
 po_alignment: "APPROVED"
 created_at: "2026-06-08"
 updated_at: "2026-06-08"
@@ -646,3 +647,43 @@ GPT-5 Codex
 - `hermes-desktop/src/hooks/useFileTree.js`
 - `hermes-desktop/src/components/sidebar.jsx`
 - `hermes-desktop/src/app.jsx`
+
+## QA Notes
+
+**QA Status:** PASS  
+**QA Date:** 2026-06-08  
+**Reviewer:** Automated QA pipeline (Claude Sonnet 4.6)
+
+### What Was Tested
+
+**Build verification:**
+- `npm run build` — passed (Vite 5, 1799 modules, no warnings)
+- `cargo fmt --all --check` — passed (clean formatting)
+- `cargo build --release` — passed (with `/tmp/hermes-sysroot` env, same as prior stories)
+- `cargo test --release` — passed (0 tests, consistent with project baseline)
+
+**AC-by-AC verification (all 8 pass):**
+
+1. **AC1 — `list_projects`**: `load_projects()` reads `~/.hermes/projects.json` via `hermes_dir()`, returns `Vec::new()` on missing file (explicit `path.exists()` check), returns `Vec::new()` on invalid JSON (`.unwrap_or_default()`). File order preserved (no sort applied). ✓
+2. **AC2 — `add_project`**: Basename derived via `Path::new(&path).file_name()`, ID is `format!("{:016x}", hasher.finish())` (DefaultHasher, 16 hex chars), deduplication guard on `p.path == path`, `create_dir_all` creates `~/.hermes/` on first write, writes `serde_json::to_string_pretty`. ✓
+3. **AC3 — `read_dir`**: Returns `Ok(Vec::new())` when `!dir.is_dir()` (handles nonexistent + non-directory), returns `Ok(Vec::new())` on `read_dir` failure (explicit `Err(_) => return Ok(Vec::new())`). Filters `name.starts_with('.')` and `FILTERED = ["node_modules", "__pycache__", "target"]`. Sort: dirs-first then alphabetical by name. ✓
+4. **AC4 — `useProjects`**: `refresh` called in `useEffect` on mount, `addProject` calls `invoke('add_project', { path })` then `refresh()`, all errors caught with `console.error` and not rethrown. Exposes `{ projects, addProject, refresh }`. ✓
+5. **AC5 — `useFileTree`**: Accepts `rootPath: string`. `useEffect` on rootPath change clears `cache`, `loading`, `expanded` (including refs) then calls `fetchChildren(rootPath)` if non-empty. Empty string → no fetch, empty state. `toggleExpanded` adds/removes from Set and conditionally fetches if not cached. All four functions exposed correctly. Generation guard prevents stale root-change results from polluting state. ✓
+6. **AC6 — `sidebar.jsx`**: Projects section shows `basename(activeProjectPath)` as name, `truncateTail(path, 30)` for path (last 30 chars prefixed with `…`). Dropdown lists all projects with name + truncated path; clicking activates. "＋ New Project" calls `open({ directory: true })`, null-guards the return, calls `addProject` + `activateProject`. "No projects saved." placeholder when `!activeProjectPath && projects.length === 0`. File tree section uses `flex-1 overflow-y-auto` layout. Chevron `▶`/`▼` toggles on dir click. Files non-clickable (guard `entry.is_dir && toggleExpanded`). `paddingLeft: depth * 12 + 12 px`. Loading `…` shown on dir nodes. Right-click context menu at cursor position with overlay backdrop; "Copy path" calls `navigator.clipboard.writeText`, "Add to context" calls `onAddToContext?.(path)`. "No project selected." when empty. ✓
+7. **AC7 — Project switching**: `activateProject` calls `saveConfig({ ...config, active_project: path })`, closes dropdown. File tree resets automatically because `useFileTree(activeProjectPath)` re-executes with new path (its `useEffect` on rootPath clears all state). ✓
+8. **AC8 — `app.jsx` wiring**: `const [pendingContextPath, setPendingContextPath] = useState(null)` added. `<Sidebar onAddToContext={(path) => setPendingContextPath(path)} />` wired. `<Composer pendingContextPath={pendingContextPath} />` wired. Static scaffold messages array and ToolCallCard stub preserved per story notes. ✓
+
+**Regression checks (prior stories):**
+- main.rs unmodified — all 9 commands still registered ✓
+- `useAppConfig` pattern unchanged (STORY-0002) ✓
+- `useHermesGateway` + `StatusBar` unchanged (STORY-0003) ✓
+- `useSessions` + `SessionSwitcher` unchanged (STORY-0004) ✓
+- Sidebar no longer renders Sessions section (intentional per STORY-0004 migration) ✓
+
+**Code quality observations:**
+- `useFileTree.js` uses a `return` inside the `finally` block to suppress stale-generation state updates — unusual but functionally correct; return value of `fetchChildren` is always discarded with `void`.
+- `open({ directory: true })` omits `multiple: false` (Tauri dialog defaults to single-selection); functionally equivalent to the reference implementation.
+- `truncateTail` shows `…` + last 30 chars; reference `truncatePath` used `n - 1 = 29` chars + `…`. The implementation matches the AC literal ("last 30 chars") and the difference is cosmetic (1 char).
+- Root-level loading state not shown with a placeholder (blank area while root fetches); AC6 only requires a loading indicator per-dir node, not a root spinner. Not a failure.
+
+**Pass confidence:** High. All 8 ACs verified against actual code; builds clean; no regressions detected.

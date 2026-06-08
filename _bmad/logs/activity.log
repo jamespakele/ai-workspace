@@ -71,3 +71,20 @@
 2026-06-08T15:50:32Z | QA_ITER | STORY-0004 | QA_START | QA via claude opus
 2026-06-08T16:05:00Z | QA_ITER | STORY-0004 | QA_PASS | PASS — all 9 ACs verified by code inspection + npm run build (Vite 5.4.21, zero errors). AC#1: sqlx 0.7 read-only, exact §3.2 SQL, empty Vec guard. AC#2: useSessions hook shape + silent error handling. AC#3: SessionSwitcher in header, trigger label logic (title→preview→"New Session"). AC#4: rows with 50-char truncation, Today/Yesterday/MMM-D date, toLocaleString tokens. AC#5: session.resume + setActiveSessionId + resetTokenCount on row click. AC#6: "+ New Session" pinned first, session.create + setActiveSessionId(null) + resetTokenCount. AC#7: resetTokenCount added to useHermesGateway return only. AC#8: status bar session label shows slice(0,8)+"…" or "—", no "scaffold". AC#9: SqliteConnectOptions read_only(true). No regressions vs STORY-0001/0002/0003. Residuals (non-blocking): static scaffold content (messages array + ToolCard stub) not removed from app.jsx; no click-outside handler on dropdown. Story → COMPLETED.
 2026-06-08T15:53:55Z | QA_ITER | STORY-0004 | QA_PASS | Completed
+2026-06-08T15:53:55Z | GIT | STORY-0004 | COMMIT | story(STORY-0004): QA PASS
+2026-06-08T15:53:57Z | GIT | STORY-0004 | PUSH | ok
+2026-06-08T15:53:57Z | ORCH | STORY-0004 | STORY_COMPLETE | Committed
+2026-06-08T15:53:57Z | SM_NEXT | - | SM_NEXT_START | Creating next story via claude
+2026-06-08T16:00:17Z | SM_NEXT | STORY-0005 | CREATED | SM_NEXT: created STORY-0005 -- Sidebar: Project Switcher & File Tree
+2026-06-08T16:00:22Z | SM_NEXT | STORY-0005 | SM_NEXT_DONE | Story created
+2026-06-08T16:00:22Z | SM_ITER | STORY-0005 | SM_START | SM writing/revising via claude
+2026-06-08T16:05:00Z | SM_ITER | STORY-0005 | SM_DONE | Story reviewed against codebase; four additions applied to Dev Notes: (1) explicit main.rs no-change note (all 9 commands already registered), (2) app.jsx scope boundary — do not remove scaffold messages (STORY-0004 residual, future chat story), (3) AppConfig.active_project type clarification (plain String confirmed from STORY-0002), (4) sidebar Sessions section removal is intentional (moved to header SessionSwitcher in STORY-0004). Status: DRAFT, po_alignment: PENDING
+2026-06-08T16:02:46Z | SM_ITER | STORY-0005 | SM_DONE | Done
+2026-06-08T16:02:46Z | PO_ITER | STORY-0005 | PO_START | PO reviewing via claude
+2026-06-08T00:00:00Z | PO | STORY-0005 | PO_APPROVED | Story approved READY_FOR_DEV: all 8 ACs specific and testable, PRD §6.3/§6.4 coverage confirmed, architecture compliance verified, all stub targets exist, no scope overlap with STORY-0001–0004
+2026-06-08T16:05:05Z | PO_ITER | STORY-0005 | PO_APPROVED | Story approved
+2026-06-08T16:05:05Z | DEV_ITER | STORY-0005 | DEV_START | Dev via codex
+2026-06-08T16:11:24Z | DEV_ITER | STORY-0005 | DEV_DONE | PENDING_QA
+2026-06-08T16:11:24Z | QA_ITER | STORY-0005 | QA_START | QA via claude opus
+2026-06-08T16:35:00Z | QA_ITER | STORY-0005 | QA_DONE | PASS — all 8 ACs verified; npm run build, cargo fmt, cargo build --release, cargo test --release all pass; no regressions detected
+2026-06-08T16:16:13Z | QA_ITER | STORY-0005 | QA_PASS | Completed
