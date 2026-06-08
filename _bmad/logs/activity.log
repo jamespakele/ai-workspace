@@ -1,0 +1,5 @@
+2026-06-08T14:15:31Z | ORCH | - | ITERATIVE_START | Entering SM-driven loop
+2026-06-08T14:15:31Z | SM_NEXT | - | SM_NEXT_START | Creating next story via claude
+2026-06-08T14:17:01Z | SM_NEXT | STORY-0001 | CREATED | SM_NEXT: created STORY-0001 -- Tauri Application Scaffold
+2026-06-08T14:17:07Z | SM_NEXT | STORY-0001 | SM_NEXT_DONE | Story created
+2026-06-08T14:17:07Z | SM_ITER | STORY-0001 | SM_START | SM writing/revising via claude
