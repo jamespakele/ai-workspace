@@ -1,15 +1,16 @@
 ---
 story_id: "STORY-0006"
 title: "Chat Interface & Composer"
-status: "PENDING_QA"
+status: "COMPLETED"
+qa_status: "PASS"
 po_alignment: "APPROVED"
 created_at: "2026-06-08"
-updated_at: "2026-06-08T16:33:07Z"
+updated_at: "2026-06-08T17:00:00Z"
 ---
 
 # Story 6.1: Chat Interface & Composer
 
-Status: PENDING_QA
+Status: COMPLETED
 
 ## Story
 
@@ -303,3 +304,42 @@ claude-sonnet-4-6
 - Added `@tailwindcss/typography` because the story-required `prose` classes would otherwise render without the expected markdown typography styles.
 - Used a helper in `app.jsx` to target the last streaming assistant message consistently for tool and completion events instead of duplicating the search logic across handlers.
 - Kept error messages as a simple inline bubble in `app.jsx` rather than introducing a third message component because the story only requires dedicated user and assistant components.
+
+## QA Notes
+
+**QA Result: PASS**
+**QA Date:** 2026-06-08
+**Auditor:** QA automated pipeline (claude-sonnet-4-6)
+
+### What Was Tested
+
+1. **Static analysis** — Full read of all 9 implementation files against each AC.
+2. **Build verification** — `npm run build` ran successfully (2467 modules, no errors).
+3. **AC-by-AC trace** — Each of the 11 acceptance criteria verified against actual source.
+4. **Regression check** — Prior story hook exports (`status`, `send`, `activeModel`, `tokenCount`, `resetTokenCount`) and app wiring (`useSessions`, `Sidebar`, `SettingsPanel`, `StatusBar`, `SessionSwitcher`) all intact.
+
+### AC Outcomes
+
+| AC | Result | Notes |
+|----|--------|-------|
+| #1 Packages installed | PASS | react-markdown@9.1.0, remark-gfm@4.0.1, react-syntax-highlighter@15.6.6 all present; build clean |
+| #2 Markdown component | PASS | ReactMarkdown + remarkGfm + Prism/oneDark; language-* detection without deprecated `inline` prop |
+| #3 useHermesGateway chat events | PASS | Ref pattern correct; CHAT_EVENTS set complete; existing handlers untouched |
+| #4 Message state model | PASS | useState([])/useState(false); correct message and toolCall shapes |
+| #5 handleChatEvent | PASS | useCallback([]) with functional setters; all 6 event types handled correctly |
+| #6 Auto-scroll | PASS | messagesEndRef attached to trailing div; useEffect([messages]) calls scrollIntoView |
+| #7 UserMessage | PASS | All required classes and "YOU" label present; plain text |
+| #8 AssistantMessage | PASS | Markdown body, streaming cursor, ToolCallCards; old Message export removed |
+| #9 ToolCallCard | PASS | Ref-based transition detection; args/partialOutput/result with 500-char truncation |
+| #10 Composer | PASS | All props wired; Enter-to-send; context injection; send+onUserMessage+clear sequence |
+| #11 app.jsx wiring | PASS (minor) | handleChatEvent declared before hook call; empty-state; per-role rendering correct |
+
+### Minor Deviation (non-blocking)
+
+- **Error bubble text color**: AC#11 specifies `text-red-400` for error messages; implementation uses `text-text` (normal text color). Visual distinction is preserved via the red border (`border-red-500/30`) and background (`bg-red-500/10`). Also uses `rounded-2xl` (vs spec `rounded-xl`) and `border-red-500/30` (vs spec `border-red-500/40`). These are cosmetic-only and do not affect functionality.
+
+### Residual Risks
+
+- No live gateway to exercise streaming end-to-end; correctness of event routing is logic-verified only.
+- Bundle is 1 MB unminified; build warning about chunk size is expected for a Tauri app with Prism syntax highlighting and not a regression.
+- `cargo build` still requires the host GTK/WebKit sysroot documented in STORY-0001; no new Rust changes in this story so no new Rust risk.

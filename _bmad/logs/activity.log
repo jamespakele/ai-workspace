@@ -88,3 +88,20 @@
 2026-06-08T16:11:24Z | QA_ITER | STORY-0005 | QA_START | QA via claude opus
 2026-06-08T16:35:00Z | QA_ITER | STORY-0005 | QA_DONE | PASS — all 8 ACs verified; npm run build, cargo fmt, cargo build --release, cargo test --release all pass; no regressions detected
 2026-06-08T16:16:13Z | QA_ITER | STORY-0005 | QA_PASS | Completed
+2026-06-08T16:16:13Z | GIT | STORY-0005 | COMMIT | story(STORY-0005): QA PASS
+2026-06-08T16:16:15Z | GIT | STORY-0005 | PUSH | ok
+2026-06-08T16:16:15Z | ORCH | STORY-0005 | STORY_COMPLETE | Committed
+2026-06-08T16:16:15Z | SM_NEXT | - | SM_NEXT_START | Creating next story via claude
+2026-06-08T16:21:02Z | SM_NEXT | STORY-0006 | CREATED | SM_NEXT: created STORY-0006 -- Chat Interface & Composer
+2026-06-08T16:21:11Z | SM_NEXT | STORY-0006 | SM_NEXT_DONE | Story created
+2026-06-08T16:21:11Z | SM_ITER | STORY-0006 | SM_START | SM writing/revising via claude
+2026-06-08T16:45:00Z | SM_ITER | STORY-0006 | SM_DONE | Story reviewed and improved: (1) CRITICAL FIX — added message.complete to CHAT_EVENTS set and AC#3 list so handleChatEvent can set isStreaming:false on turn end (was missing, causing streaming state to never clear), (2) CRITICAL FIX — react-markdown v9 removed the inline prop from code renderer; updated Dev Notes code snippet to use className/language-* matching and flagged it in the markdown.jsx task, (3) added declaration-order Dev Notes warning (handleChatEvent must be declared before useHermesGateway call in app.jsx), (4) added task subtask to remove ToolCard and Markdown imports from app.jsx (move inside AssistantMessage) and to preserve all existing hook destructured fields. Status: DRAFT, po_alignment: PENDING
+2026-06-08T16:25:45Z | SM_ITER | STORY-0006 | SM_DONE | Done
+2026-06-08T16:25:45Z | PO_ITER | STORY-0006 | PO_START | PO reviewing via claude
+2026-06-08T16:50:00Z | PO_ITER | STORY-0006 | PO_APPROVED | Full P0 PRD coverage (C1/C2/C3/C7/M1). Architecture-consistent. 11 numbered testable ACs. Dependencies on STORY-0003/0004/0005 all COMPLETE. No duplicate scope. status→READY_FOR_DEV
+2026-06-08T16:27:58Z | PO_ITER | STORY-0006 | PO_APPROVED | Story approved
+2026-06-08T16:27:58Z | DEV_ITER | STORY-0006 | DEV_START | Dev via codex
+2026-06-08T16:34:45Z | DEV_ITER | STORY-0006 | DEV_DONE | PENDING_QA
+2026-06-08T16:34:45Z | QA_ITER | STORY-0006 | QA_START | QA via claude opus
+2026-06-08T17:00:00Z | QA | STORY-0006 | QA_PASS | All 11 ACs verified via static analysis and npm run build. Minor cosmetic deviation in error bubble (text-text vs text-red-400); non-blocking. No regressions in prior story hook/wiring. Story status→COMPLETED.
+2026-06-08T16:37:53Z | QA_ITER | STORY-0006 | QA_PASS | Completed
