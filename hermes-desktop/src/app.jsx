@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { useState } from "react";
 
 import { Sidebar } from "./components/sidebar";
 import { SettingsPanel } from "./components/settings";
@@ -8,7 +7,9 @@ import { Message } from "./components/message";
 import { ToolCard } from "./components/toolcard";
 import { Composer } from "./components/composer";
 import { Markdown } from "./components/markdown";
+import { SessionSwitcher } from "./components/session-switcher";
 import { useHermesGateway } from "./hooks/useHermesGateway";
+import { useSessions } from "./hooks/useSessions";
 
 const messages = [
   {
@@ -26,30 +27,9 @@ export default function App() {
     activeModel,
     tokenCount,
     send,
+    resetTokenCount,
   } = useHermesGateway();
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const startGateway = async () => {
-      try {
-        const config = await invoke("get_config");
-        if (cancelled || !config.auto_start_gateway) {
-          return;
-        }
-
-        await invoke("spawn_gateway", { hermesBin: config.hermes_bin });
-      } catch {
-        // Another gateway instance may already be running.
-      }
-    };
-
-    void startGateway();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { sessions, activeSessionId, setActiveSessionId } = useSessions();
 
   return (
     <div className="flex min-h-screen flex-col bg-canvas text-text">
@@ -57,10 +37,13 @@ export default function App() {
         <Sidebar />
         <main className="flex min-w-0 flex-1 flex-col bg-canvas">
           <header className="border-b border-border px-6 py-4">
-            <p className="font-mono text-xs uppercase tracking-[0.3em] text-muted">
-              Hermes Desktop
-            </p>
-            <h1 className="mt-2 text-xl font-semibold">Application Shell</h1>
+            <SessionSwitcher
+              sessions={sessions}
+              activeSessionId={activeSessionId}
+              setActiveSessionId={setActiveSessionId}
+              send={send}
+              resetTokenCount={resetTokenCount}
+            />
           </header>
           <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-5">
             <div className="rounded-2xl border border-border bg-panel/80 p-4">
@@ -81,6 +64,7 @@ export default function App() {
       <StatusBar
         gatewayStatus={gatewayStatus}
         activeModel={activeModel}
+        activeSessionId={activeSessionId}
         tokenCount={tokenCount}
         onSettingsOpen={() => setSettingsOpen(true)}
       />

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
 const INITIAL_DELAY_MS = 500;
@@ -220,10 +220,13 @@ export function useHermesGateway() {
     socket.send(JSON.stringify({ method, params }));
   };
 
+  const resetTokenCount = useCallback(() => setTokenCount(0), []);
+
   return {
     status,
     send,
     activeModel,
     tokenCount,
+    resetTokenCount,
   };
 }

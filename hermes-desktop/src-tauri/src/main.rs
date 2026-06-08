@@ -9,6 +9,7 @@ mod sessions;
 
 use gateway::GatewayState;
 use std::sync::Mutex;
+use tauri::Manager;
 
 fn main() {
     tauri::Builder::default()
@@ -31,10 +32,13 @@ fn main() {
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {
                 let state = window.state::<GatewayState>();
-                if let Ok(mut guard) = state.0.lock() {
-                    if let Some(mut child) = guard.take() {
-                        let _ = child.kill();
-                    }
+                let child_to_kill = match state.0.lock() {
+                    Ok(mut guard) => guard.take(),
+                    Err(_) => None,
+                };
+
+                if let Some(mut child) = child_to_kill {
+                    let _ = child.kill();
                 }
             }
         })

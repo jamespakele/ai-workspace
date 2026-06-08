@@ -10,6 +10,7 @@ const statusClassName = {
 export function StatusBar({
   gatewayStatus,
   activeModel,
+  activeSessionId,
   tokenCount,
   onSettingsOpen,
 }) {
@@ -26,7 +27,7 @@ export function StatusBar({
       </div>
       <div className="flex items-center gap-3">
         <span>project: none</span>
-        <span>session: scaffold</span>
+        <span>session: {activeSessionId ? `${activeSessionId.slice(0, 8)}…` : "—"}</span>
         <span>tokens: {tokenCount.toLocaleString()}</span>
         <button
           type="button"
