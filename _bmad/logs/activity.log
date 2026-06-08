@@ -37,3 +37,20 @@
 2026-06-08T15:14:57Z | QA_ITER | STORY-0002 | QA_START | QA via claude opus
 2026-06-08T18:45:00Z | QA_ITER | STORY-0002 | QA_DONE | PASS — all 8 ACs verified: npm run build passes (Vite 5.4.21, 1793 modules, zero errors), cargo fmt clean, cargo check/build blocked at same documented GTK/WebKit host barrier as STORY-0001 (no new Rust source errors). AppConfig struct matches architecture §4.1 exactly. useAppConfig module-level store emits to all consumers after save. Settings modal: null-safe init, disabled Save while loading, inline save error display, Cancel discards without write. Gear icon wired via onSettingsOpen prop. No regressions against STORY-0001. Story → COMPLETED.
 2026-06-08T15:17:33Z | QA_ITER | STORY-0002 | QA_PASS | Completed
+2026-06-08T15:17:33Z | GIT | STORY-0002 | COMMIT | story(STORY-0002): QA PASS
+2026-06-08T15:17:35Z | GIT | STORY-0002 | PUSH | ok
+2026-06-08T15:17:35Z | ORCH | STORY-0002 | STORY_COMPLETE | Committed
+2026-06-08T15:17:35Z | SM_NEXT | - | SM_NEXT_START | Creating next story via claude
+2026-06-08T15:19:50Z | SM_NEXT | STORY-0003 | CREATED | SM_NEXT: created STORY-0003 -- Gateway Lifecycle & Live Status Bar
+2026-06-08T15:19:56Z | SM_NEXT | STORY-0003 | SM_NEXT_DONE | Story created
+2026-06-08T15:19:56Z | SM_ITER | STORY-0003 | SM_START | SM writing/revising via claude
+2026-06-08T15:22:00Z | SM_ITER | STORY-0003 | SM_DONE | Story reviewed and improved: (1) CRITICAL FIX — bg-accent is Nous Purple (#7c3aed), not green; connected dot must use bg-green-400 (verified from globals.css), (2) defined complete hook return shape { status, send, activeModel, tokenCount } so app.jsx avoids event-listener coupling, (3) explicitly listed main.rs as a file to modify (add .manage(GatewayState) and .on_window_event cleanup), (4) clarified token accumulation formula (input_tokens + output_tokens from message.complete.data), (5) specified spawn_gateway receives hermes_bin as a parameter from the frontend (avoids config coupling in Rust), (6) noted disconnect method from stub is not part of new API, (7) confirmed no new npm or Cargo dependencies required. Status: DRAFT, po_alignment: PENDING
+2026-06-08T15:22:56Z | SM_ITER | STORY-0003 | SM_DONE | Done
+2026-06-08T15:22:56Z | PO_ITER | STORY-0003 | PO_START | PO reviewing via claude
+2026-06-08T15:23:00Z | PO_ITER | STORY-0003 | PO_APPROVED | All criteria passed: PRD G1-G5/B2/T2-T3 fully mapped, architecture-consistent (hook names/Tauri commands/hermes --tui/GatewayState all match), 10 numbered testable ACs with precise parameters, right-sized scope (5 files), STORY-0002 dependency COMPLETE with required config fields confirmed, no duplicate scope. status→READY_FOR_DEV
+2026-06-08T15:25:34Z | PO_ITER | STORY-0003 | PO_APPROVED | Story approved
+2026-06-08T15:25:34Z | DEV_ITER | STORY-0003 | DEV_START | Dev via codex
+2026-06-08T15:29:59Z | DEV_ITER | STORY-0003 | DEV_DONE | PENDING_QA
+2026-06-08T15:29:59Z | QA_ITER | STORY-0003 | QA_START | QA via claude opus
+2026-06-08T15:33:41Z | QA_ITER | STORY-0003 | QA_PASS | All 10 ACs verified by code inspection. npm run build + cargo fmt pass. No regressions vs STORY-0001/0002. status→COMPLETED
+2026-06-08T15:33:52Z | QA_ITER | STORY-0003 | QA_PASS | Completed
