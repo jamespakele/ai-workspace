@@ -14,3 +14,5 @@
 2026-06-08T14:36:26Z | DEV_ITER | STORY-0001 | DEV_CONTINUE | Not yet PENDING_QA
 2026-06-08T14:36:27Z | DEV_ITER | STORY-0001 | DEV_START | Dev via codex
 2026-06-08T16:09:00Z | DEV_ITER | STORY-0001 | DEV_CONTINUE | Reproduced build blocker and confirmed remaining failure is Ubuntu GTK/WebKit native dependency provisioning, not repo source. Story remains IN_DEV.
+2026-06-08T14:40:18Z | DEV_ITER | STORY-0001 | DEV_CONTINUE | Not yet PENDING_QA
+2026-06-08T14:40:18Z | DEV_ITER | STORY-0001 | DEV_START | Dev via codex

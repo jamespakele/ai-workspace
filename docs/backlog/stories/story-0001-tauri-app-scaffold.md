@@ -1,7 +1,7 @@
 ---
 story_id: "STORY-0001"
 title: "Tauri Application Scaffold"
-status: "IN_DEV"
+status: "PENDING_QA"
 po_alignment: "APPROVED"
 created_at: "2026-06-08"
 updated_at: "2026-06-08"
@@ -11,7 +11,7 @@ depends_on: []
 
 # Story 0001: Tauri Application Scaffold
 
-Status: IN_DEV
+Status: PENDING_QA
 
 ## Story
 
@@ -77,8 +77,8 @@ so that all subsequent feature stories have a buildable, runnable base to build 
   - [x] Create stub hooks directory: `src/hooks/useHermesGateway.js`, `src/hooks/useSessions.js`, `src/hooks/useFileTree.js`, `src/hooks/useProjects.js`, `src/hooks/useAppConfig.js` (each exports a no-op hook)
   - [x] Apply design tokens via Tailwind / CSS variables so window background is `#0F0F11`, sidebar is `#161618`
 
-- [ ] Build verification (AC: 7, 8)
-  - [ ] Confirm `cargo build --release` succeeds with zero errors
+- [x] Build verification (AC: 7, 8)
+  - [x] Confirm `cargo build --release` succeeds with zero errors
   - [x] Confirm `npm run build` succeeds with zero errors
 
 ## Dev Notes
@@ -247,7 +247,7 @@ claude-sonnet-4-6
 - Local package extraction resolved the first missing `.pc` files, but the release build still failed on additional native requirements (`libpcre2-8` via `glib-2.0`), confirming the blocker is host provisioning rather than Rust/Tauri source errors.
 - `apt-get download libdbus-1-dev libwebkit2gtk-4.1-dev librsvg2-dev libglib2.0-dev libgtk-3-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev libatk1.0-dev libcairo2-dev libfribidi-dev libgdk-pixbuf-2.0-dev libpango1.0-dev libharfbuzz-dev libfontconfig-dev libfreetype-dev libx11-dev libxcomposite-dev libxcursor-dev libxdamage-dev libxext-dev libxfixes-dev libxi-dev libxinerama-dev libxkbcommon-dev libxrandr-dev libwayland-dev libepoxy-dev libegl1-mesa-dev libmount-dev libpcre2-dev libselinux1-dev zlib1g-dev libsqlite3-dev libnghttp2-dev libpsl-dev libsysprof-capture-4-dev libffi-dev libgirepository1.0-dev libgirepository-2.0-0`
 - `PKG_CONFIG_PATH=/tmp/hermes-sysroot/root/usr/lib/x86_64-linux-gnu/pkgconfig:/tmp/hermes-sysroot/root/usr/share/pkgconfig PKG_CONFIG_SYSROOT_DIR=/tmp/hermes-sysroot/root LD_LIBRARY_PATH=/tmp/hermes-sysroot/root/usr/lib/x86_64-linux-gnu:/tmp/hermes-sysroot/root/lib/x86_64-linux-gnu LIBRARY_PATH=/tmp/hermes-sysroot/root/usr/lib/x86_64-linux-gnu:/tmp/hermes-sysroot/root/lib/x86_64-linux-gnu CPATH=/tmp/hermes-sysroot/root/usr/include:/tmp/hermes-sysroot/root/usr/include/x86_64-linux-gnu cargo build --release`
-- The broader sysroot attempt advanced `cargo build --release` to deeper GTK/WebKit dependency resolution, then failed on further transitive pkg-config requirements (`blkid`, `libsepol`, `libpng`, `libbrotlidec`, `graphite2`, `xproto`, `kbproto`, `xextproto`, `xrender`, `xcb`, `xcb-render`, `xcb-shm`, `pixman-1`), confirming the remaining work is Ubuntu host provisioning rather than a repo code defect.
+- `timeout 20s bash -lc 'export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUNNER=/home/james/1-projects/ai-workspace/.tmp/tauri-runner.sh; export PKG_CONFIG_PATH=/tmp/hermes-sysroot/root/usr/lib/x86_64-linux-gnu/pkgconfig:/tmp/hermes-sysroot/root/usr/share/pkgconfig; export PKG_CONFIG_SYSROOT_DIR=/tmp/hermes-sysroot/root; export LD_LIBRARY_PATH=/tmp/hermes-sysroot/root/usr/lib/x86_64-linux-gnu:/tmp/hermes-sysroot/root/lib/x86_64-linux-gnu; export LIBRARY_PATH=/tmp/hermes-sysroot/root/usr/lib/x86_64-linux-gnu:/tmp/hermes-sysroot/root/lib/x86_64-linux-gnu; export CPATH=/tmp/hermes-sysroot/root/usr/include:/tmp/hermes-sysroot/root/usr/include/x86_64-linux-gnu; npm run tauri dev -- --release --no-watch'`
 
 ### Completion Notes List
 
@@ -257,8 +257,9 @@ claude-sonnet-4-6
 - Built the static application shell with the required sidebar, central chat region, and 28px status bar, using PRD token CSS variables in `src/styles/globals.css`.
 - Verified `npm run build` passes.
 - Investigated a user-local Linux package workaround by extracting the missing `pkg-config` metadata and headers for the Tauri GTK/WebKit stack; that moved the Rust build forward but exposed further transitive native dependencies (`libpcre2-8` through `glib-2.0`).
-- Re-ran the workaround with a broader temporary sysroot assembled from Ubuntu 24.04 packages; that confirmed the scaffold source remains clean and the failure boundary is now the rest of the GTK/WebKit/X11 pkg-config chain, not the Hermes Desktop code.
-- Could not complete `cargo build --release` or `cargo tauri dev` in this environment because the Ubuntu host still lacks the full GTK/WebKit development toolchain and `sudo` requires a password, so AC1 and AC7 remain blocked by host provisioning.
+- Re-ran the workaround with a broader temporary sysroot assembled from Ubuntu 24.04 packages, which surfaced and fixed a real Tauri capability misconfiguration in `src-tauri/capabilities/default.json` (`opener:default` was invalid for this app; replaced with the installed plugin permissions).
+- Completed `cargo build --release` by supplying the GTK/WebKit/X11 development chain from the temporary sysroot and filling the remaining runtime dependency gaps (`WebKitNetworkProcess`, GStreamer, libxslt, libsecret, libmanette, liborc, libgudev`, etc.) needed by the release binary in this headless environment.
+- Verified the dev launch path by running `npm run tauri dev -- --release --no-watch` with a temporary Cargo runner that wrapped the spawned app in `proot`, bound the extracted WebKit helper directory into `/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1`, and let the process stay alive until the external timeout ended the verification window.
 
 ### File List
 
@@ -287,9 +288,16 @@ claude-sonnet-4-6
 - `hermes-desktop/src/styles/globals.css`
 - `hermes-desktop/src-tauri/Cargo.toml`
 - `hermes-desktop/src-tauri/tauri.conf.json`
+- `hermes-desktop/src-tauri/capabilities/default.json`
 - `hermes-desktop/src-tauri/src/main.rs`
 - `hermes-desktop/src-tauri/src/sessions.rs`
 - `hermes-desktop/src-tauri/src/config.rs`
 - `hermes-desktop/src-tauri/src/projects.rs`
 - `hermes-desktop/src-tauri/src/fs.rs`
 - `hermes-desktop/src-tauri/src/gateway.rs`
+
+## Implementation Notes
+
+- Files changed: `hermes-desktop/src-tauri/capabilities/default.json`, `docs/backlog/stories/story-0001-tauri-app-scaffold.md`
+- Approach: finished the scaffold by validating the existing source against a progressively assembled Ubuntu 24.04 sysroot until the native GTK/WebKit toolchain and runtime chain were complete enough to compile and launch the Tauri binary in this non-root environment.
+- Key decisions: fixed the invalid `opener:default` capability instead of adding the unused opener plugin; kept the native dependency workaround out of the committed app source and used a temporary Cargo runner only for headless verification of `tauri dev`.
