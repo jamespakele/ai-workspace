@@ -7,12 +7,16 @@ mod gateway;
 mod projects;
 mod sessions;
 
+use gateway::GatewayState;
+use std::sync::Mutex;
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_store::Builder::default().build())
+        .manage(GatewayState(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             sessions::list_sessions,
             sessions::get_session_messages,
@@ -24,6 +28,16 @@ fn main() {
             gateway::spawn_gateway,
             gateway::kill_gateway,
         ])
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { .. } = event {
+                let state = window.state::<GatewayState>();
+                if let Ok(mut guard) = state.0.lock() {
+                    if let Some(mut child) = guard.take() {
+                        let _ = child.kill();
+                    }
+                }
+            }
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

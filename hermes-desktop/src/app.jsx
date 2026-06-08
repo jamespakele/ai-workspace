@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 
 import { Sidebar } from "./components/sidebar";
 import { SettingsPanel } from "./components/settings";
@@ -7,6 +8,7 @@ import { Message } from "./components/message";
 import { ToolCard } from "./components/toolcard";
 import { Composer } from "./components/composer";
 import { Markdown } from "./components/markdown";
+import { useHermesGateway } from "./hooks/useHermesGateway";
 
 const messages = [
   {
@@ -19,6 +21,35 @@ const messages = [
 
 export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const {
+    status: gatewayStatus,
+    activeModel,
+    tokenCount,
+    send,
+  } = useHermesGateway();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const startGateway = async () => {
+      try {
+        const config = await invoke("get_config");
+        if (cancelled || !config.auto_start_gateway) {
+          return;
+        }
+
+        await invoke("spawn_gateway", { hermesBin: config.hermes_bin });
+      } catch {
+        // Another gateway instance may already be running.
+      }
+    };
+
+    void startGateway();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col bg-canvas text-text">
@@ -41,13 +72,18 @@ export default function App() {
             <ToolCard
               toolName="spawn_gateway"
               status="stub"
-              summary="Backend command registered; implementation deferred to a later story."
+              summary={`Gateway lifecycle is live. Current connection state: ${gatewayStatus}.`}
             />
           </section>
           <Composer />
         </main>
       </div>
-      <StatusBar onSettingsOpen={() => setSettingsOpen(true)} />
+      <StatusBar
+        gatewayStatus={gatewayStatus}
+        activeModel={activeModel}
+        tokenCount={tokenCount}
+        onSettingsOpen={() => setSettingsOpen(true)}
+      />
       <SettingsPanel
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
