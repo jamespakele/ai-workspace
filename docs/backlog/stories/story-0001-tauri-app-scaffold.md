@@ -1,8 +1,8 @@
 ---
 story_id: "STORY-0001"
 title: "Tauri Application Scaffold"
-status: "DRAFT"
-po_alignment: "PENDING"
+status: "IN_DEV"
+po_alignment: "APPROVED"
 created_at: "2026-06-08"
 updated_at: "2026-06-08"
 epic: "foundation"
@@ -11,7 +11,7 @@ depends_on: []
 
 # Story 0001: Tauri Application Scaffold
 
-Status: DRAFT
+Status: IN_DEV
 
 ## Story
 
@@ -34,54 +34,84 @@ so that all subsequent feature stories have a buildable, runnable base to build 
 
 ## Tasks / Subtasks
 
-- [ ] Initialize Tauri 2.x project (AC: 1, 2)
-  - [ ] Run `cargo create-tauri-app` (or equivalent) in `hermes-desktop/` targeting Vite + React template
-  - [ ] Rename/restructure generated directories to match architecture.md §7 exactly
-  - [ ] Set `"identifier": "ai.pakele.hermes-desktop"` and `"title": "Hermes Desktop"` in `tauri.conf.json`
-  - [ ] Set minimum window size 1024×768 in `tauri.conf.json`
+- [x] Initialize Tauri 2.x project (AC: 1, 2)
+  - [x] Run `cargo create-tauri-app` (or equivalent) in `hermes-desktop/` targeting Vite + React template
+  - [x] Rename/restructure generated directories to match architecture.md §7 exactly
+  - [x] Set `"identifier": "ai.pakele.hermes-desktop"` and `"title": "Hermes Desktop"` in `tauri.conf.json`
+  - [x] Set minimum window size 1024×768 in `tauri.conf.json`
 
-- [ ] Configure Tauri plugins (AC: 3)
-  - [ ] Add `@tauri-apps/plugin-dialog` v2.x to `Cargo.toml` and `package.json`
-  - [ ] Add `@tauri-apps/plugin-fs` v2.x
-  - [ ] Add `@tauri-apps/plugin-shell` v2.x
-  - [ ] Add `@tauri-apps/plugin-store` v2.x
-  - [ ] Register all four plugins in `src-tauri/src/main.rs` `.plugin(...)` chain
+- [x] Configure Tauri plugins (AC: 3)
+  - [x] Add `@tauri-apps/plugin-dialog` v2.x to `Cargo.toml` and `package.json`
+  - [x] Add `@tauri-apps/plugin-fs` v2.x
+  - [x] Add `@tauri-apps/plugin-shell` v2.x
+  - [x] Add `@tauri-apps/plugin-store` v2.x
+  - [x] Register all four plugins in `src-tauri/src/main.rs` `.plugin(...)` chain
 
-- [ ] Implement Rust command stubs (AC: 4)
-  - [ ] Create `src-tauri/src/sessions.rs` — `list_sessions()` stub returning `Vec<SessionSummary>`, `get_session_messages()` stub
-  - [ ] Create `src-tauri/src/config.rs` — `get_config()` and `save_config()` stubs
-  - [ ] Create `src-tauri/src/projects.rs` — `list_projects()` and `add_project()` stubs
-  - [ ] Create `src-tauri/src/fs.rs` — `read_dir()` stub returning `Vec<DirEntry>`
-  - [ ] Create `src-tauri/src/gateway.rs` — `spawn_gateway()` and `kill_gateway()` stubs
-  - [ ] Register all commands in `main.rs` via `.invoke_handler(tauri::generate_handler![...])`
-  - [ ] Define minimal shared structs (`SessionSummary`, `DirEntry`, `Project`, `AppConfig`) with `serde::Serialize`
+- [x] Implement Rust command stubs (AC: 4)
+  - [x] Create `src-tauri/src/sessions.rs` — `list_sessions()` stub returning `Vec<SessionSummary>`, `get_session_messages()` stub
+  - [x] Create `src-tauri/src/config.rs` — `get_config()` and `save_config()` stubs
+  - [x] Create `src-tauri/src/projects.rs` — `list_projects()` and `add_project()` stubs
+  - [x] Create `src-tauri/src/fs.rs` — `read_dir()` stub returning `Vec<DirEntry>`
+  - [x] Create `src-tauri/src/gateway.rs` — `spawn_gateway()` and `kill_gateway()` stubs
+  - [x] Register all commands in `main.rs` via `.invoke_handler(tauri::generate_handler![...])`
+  - [x] Define minimal shared structs (`SessionSummary`, `DirEntry`, `Project`, `AppConfig`) with `serde::Serialize`
 
-- [ ] Set up React + Vite + Tailwind + shadcn/ui (AC: 5)
-  - [ ] Verify React 18 and Vite 5.x in `package.json`
-  - [ ] Install and configure Tailwind CSS (PostCSS config, `tailwind.config.js`)
-  - [ ] Install shadcn/ui CLI and init (`npx shadcn-ui@latest init`)
-  - [ ] Create `src/styles/globals.css` with Tailwind directives and design token CSS custom properties
+- [x] Set up React + Vite + Tailwind + shadcn/ui (AC: 5)
+  - [x] Verify React 18 and Vite 5.x in `package.json`
+  - [x] Install and configure Tailwind CSS (PostCSS config, `tailwind.config.js`)
+  - [x] Install shadcn/ui CLI and init (`npx shadcn-ui@latest init`)
+  - [x] Create `src/styles/globals.css` with Tailwind directives and design token CSS custom properties
 
-- [ ] Add design tokens to globals.css (AC: 9)
-  - [ ] `--color-canvas: #0F0F11`
-  - [ ] `--color-sidebar: #161618`
-  - [ ] `--color-accent: #7C3AED` (Nous Purple)
-  - [ ] `--font-ui: Inter, sans-serif`
-  - [ ] `--font-mono: "JetBrains Mono", monospace`
-  - [ ] Sidebar width token: `--sidebar-width: 260px`
-  - [ ] Status bar height token: `--statusbar-height: 28px`
+- [x] Add design tokens to globals.css (AC: 9)
+  - [x] `--color-canvas: #0F0F11`
+  - [x] `--color-sidebar: #161618`
+  - [x] `--color-accent: #7C3AED` (Nous Purple)
+  - [x] `--font-ui: Inter, sans-serif`
+  - [x] `--font-mono: "JetBrains Mono", monospace`
+  - [x] Sidebar width token: `--sidebar-width: 260px`
+  - [x] Status bar height token: `--statusbar-height: 28px`
 
-- [ ] Implement static layout shell in React (AC: 6)
-  - [ ] Create `src/app.jsx` with top-level layout: sidebar (260px fixed), chat area (flex-grow), status bar (28px fixed bottom)
-  - [ ] Create stub components: `src/components/sidebar.jsx`, `src/components/statusbar.jsx`, `src/components/message.jsx`, `src/components/toolcard.jsx`, `src/components/composer.jsx`, `src/components/markdown.jsx`
-  - [ ] Create stub hooks directory: `src/hooks/useHermesGateway.js`, `src/hooks/useSessions.js`, `src/hooks/useFileTree.js`, `src/hooks/useProjects.js` (each exports a no-op hook)
-  - [ ] Apply design tokens via Tailwind / CSS variables so window background is `#0F0F11`, sidebar is `#161618`
+- [x] Implement static layout shell in React (AC: 6)
+  - [x] Create `src/app.jsx` with top-level layout: sidebar (260px fixed), chat area (flex-grow), status bar (28px fixed bottom)
+  - [x] Create stub components: `src/components/sidebar.jsx`, `src/components/statusbar.jsx`, `src/components/message.jsx`, `src/components/toolcard.jsx`, `src/components/composer.jsx`, `src/components/markdown.jsx`
+  - [x] Create stub hooks directory: `src/hooks/useHermesGateway.js`, `src/hooks/useSessions.js`, `src/hooks/useFileTree.js`, `src/hooks/useProjects.js`, `src/hooks/useAppConfig.js` (each exports a no-op hook)
+  - [x] Apply design tokens via Tailwind / CSS variables so window background is `#0F0F11`, sidebar is `#161618`
 
 - [ ] Build verification (AC: 7, 8)
   - [ ] Confirm `cargo build --release` succeeds with zero errors
-  - [ ] Confirm `npm run build` succeeds with zero errors
+  - [x] Confirm `npm run build` succeeds with zero errors
 
 ## Dev Notes
+
+### Vite Boilerplate Files (Generated — Do Not Omit)
+
+`cargo create-tauri-app` generates these files automatically; they must remain and are NOT in architecture.md §7 because they are scaffold boilerplate, not custom code:
+
+- `hermes-desktop/src/main.jsx` — Vite entry point (`ReactDOM.createRoot(...)`)
+- `hermes-desktop/index.html` — Vite HTML shell (root `<div id="root">`)
+- `hermes-desktop/vite.config.js` — Vite + Tauri plugin config; **do not delete**
+- `hermes-desktop/postcss.config.js` — Required by Tailwind CSS via PostCSS
+- `hermes-desktop/tailwind.config.js` — Tailwind content paths must include `src/**/*.{js,jsx}`
+
+shadcn/ui init (`npx shadcn-ui@latest init`) additionally generates:
+- `hermes-desktop/src/lib/utils.js` — `cn()` utility (required by all shadcn components)
+- `hermes-desktop/src/components/ui/` — shadcn primitive components (button, etc.); leave intact
+
+### `@tauri-apps/api` Frontend Dependency
+
+The React hooks use `invoke()` to call Tauri commands. The `@tauri-apps/api` package is the official Tauri v2 frontend bridge and **must be installed**:
+
+```bash
+npm install @tauri-apps/api
+```
+
+Import pattern in hooks:
+```js
+import { invoke } from '@tauri-apps/api/core';
+// e.g. const sessions = await invoke('list_sessions');
+```
+
+This package is **distinct** from the plugin packages (`@tauri-apps/plugin-*`). Both are needed.
 
 ### Critical Architecture Constraints
 
@@ -113,7 +143,8 @@ hermes-desktop/
     │   ├── useHermesGateway.js
     │   ├── useSessions.js
     │   ├── useFileTree.js
-    │   └── useProjects.js
+    │   ├── useProjects.js
+    │   └── useAppConfig.js
     ├── components/
     │   ├── sidebar.jsx
     │   ├── message.jsx
@@ -137,6 +168,7 @@ All directories and files must exist at the end of this story (stubs are fine).
 | Tailwind | latest |
 | shadcn/ui | latest |
 | sqlx | 0.7 (NOT this story — future) |
+| @tauri-apps/api | 2.x |
 | @tauri-apps/plugin-dialog | 2.x |
 | @tauri-apps/plugin-fs | 2.x |
 | @tauri-apps/plugin-shell | 2.x |
@@ -192,6 +224,10 @@ Each module file must have `pub use` on its command functions for this to compil
 - [Source: docs/prd.md#7-design-system]
 - [Source: docs/prd.md#8-non-functional-requirements]
 
+## PO Alignment
+
+2026-06-08 PO APPROVED: Story maps cleanly to PRD Phase 1 MVP and PRD §7 design system. All 10 ACs are numbered and verifiable via CLI. Architecture §4.1 command signatures, §4.2 hook/component names, §5 tech stack versions, and §7 project structure are all represented faithfully (including the `useAppConfig.js` hook from §4.2 that §7 omits). Scope is correctly bounded to scaffold stubs — SQLite, WebSocket, and global state are explicitly deferred. Dev notes prevent the common boilerplate-deletion and `@tauri-apps/api` confusion pitfalls. No dependencies required; no duplicate scope. Ready for implementation.
+
 ## Dev Agent Record
 
 ### Agent Model Used
@@ -200,6 +236,52 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- `npm create tauri-app@latest hermes-desktop -- --manager npm --template react`
+- `npm install`
+- `npx shadcn@latest init -t vite -b radix -p nova -y -f`
+- `cargo fmt --all`
+- `npm run build`
+- `cargo build --release` failed in this environment because `dbus-1`, `webkit2gtk-4.1`, and `librsvg-2.0` development libraries are not installed and require privileged package installation.
+
 ### Completion Notes List
 
+- Scaffolded `hermes-desktop/` as a Tauri 2 app and aligned the generated frontend/backend structure to the architecture contract.
+- Replaced default React 19 / Vite 7 output with React 18 / Vite 5, Tailwind CSS, and a successful shadcn/ui initialization that generated `src/components/ui/button.jsx`.
+- Added stub Rust command modules and registered the required Tauri plugins and invoke handler commands in `src-tauri/src/main.rs`.
+- Built the static application shell with the required sidebar, central chat region, and 28px status bar, using PRD token CSS variables in `src/styles/globals.css`.
+- Verified `npm run build` passes.
+- Could not complete `cargo build --release` or `cargo tauri dev` in this environment because Ubuntu packages for `dbus-1`, `webkit2gtk-4.1`, and `librsvg-2.0` are missing and `sudo` requires a password.
+
 ### File List
+
+- `hermes-desktop/package.json`
+- `hermes-desktop/package-lock.json`
+- `hermes-desktop/jsconfig.json`
+- `hermes-desktop/postcss.config.js`
+- `hermes-desktop/tailwind.config.js`
+- `hermes-desktop/components.json`
+- `hermes-desktop/vite.config.js`
+- `hermes-desktop/src/main.jsx`
+- `hermes-desktop/src/app.jsx`
+- `hermes-desktop/src/components/sidebar.jsx`
+- `hermes-desktop/src/components/statusbar.jsx`
+- `hermes-desktop/src/components/message.jsx`
+- `hermes-desktop/src/components/toolcard.jsx`
+- `hermes-desktop/src/components/composer.jsx`
+- `hermes-desktop/src/components/markdown.jsx`
+- `hermes-desktop/src/components/ui/button.jsx`
+- `hermes-desktop/src/hooks/useHermesGateway.js`
+- `hermes-desktop/src/hooks/useSessions.js`
+- `hermes-desktop/src/hooks/useFileTree.js`
+- `hermes-desktop/src/hooks/useProjects.js`
+- `hermes-desktop/src/hooks/useAppConfig.js`
+- `hermes-desktop/src/lib/utils.js`
+- `hermes-desktop/src/styles/globals.css`
+- `hermes-desktop/src-tauri/Cargo.toml`
+- `hermes-desktop/src-tauri/tauri.conf.json`
+- `hermes-desktop/src-tauri/src/main.rs`
+- `hermes-desktop/src-tauri/src/sessions.rs`
+- `hermes-desktop/src-tauri/src/config.rs`
+- `hermes-desktop/src-tauri/src/projects.rs`
+- `hermes-desktop/src-tauri/src/fs.rs`
+- `hermes-desktop/src-tauri/src/gateway.rs`

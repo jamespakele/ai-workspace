@@ -1,0 +1,80 @@
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-canvas: #0f0f11;
+  --color-sidebar: #161618;
+  --color-accent: #7c3aed;
+  --color-panel: #1b1b1f;
+  --color-border: #292931;
+  --color-text: #f4f4f5;
+  --color-muted: #9a9aa5;
+  --font-ui: Inter, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --sidebar-width: 260px;
+  --statusbar-height: 28px;
+  --background: var(--color-canvas);
+  --foreground: var(--color-text);
+  --card: var(--color-panel);
+  --card-foreground: var(--color-text);
+  --popover: var(--color-panel);
+  --popover-foreground: var(--color-text);
+  --primary: var(--color-accent);
+  --primary-foreground: #ffffff;
+  --secondary: #202026;
+  --secondary-foreground: var(--color-text);
+  --muted: #202026;
+  --muted-foreground: var(--color-muted);
+  --accent: var(--color-accent);
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --border: var(--color-border);
+  --input: var(--color-border);
+  --ring: var(--color-accent);
+  --sidebar: var(--color-sidebar);
+  --sidebar-foreground: var(--color-text);
+  --sidebar-primary: var(--color-accent);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #202026;
+  --sidebar-accent-foreground: var(--color-text);
+  --sidebar-border: var(--color-border);
+  --sidebar-ring: var(--color-accent);
+  --radius: 0.75rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+}
+
+textarea,
+button,
+input {
+  font: inherit;
+}
+
+@layer base {
+  .theme {
+    --font-heading: var(--font-ui);
+    --font-sans: var(--font-ui);
+  }
+  html {
+    @apply font-sans;
+  }
+}
