@@ -22,6 +22,7 @@ const messages = [
 
 export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [pendingContextPath, setPendingContextPath] = useState(null);
   const {
     status: gatewayStatus,
     activeModel,
@@ -34,7 +35,7 @@ export default function App() {
   return (
     <div className="flex min-h-screen flex-col bg-canvas text-text">
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <Sidebar />
+        <Sidebar onAddToContext={(path) => setPendingContextPath(path)} />
         <main className="flex min-w-0 flex-1 flex-col bg-canvas">
           <header className="border-b border-border px-6 py-4">
             <SessionSwitcher
@@ -58,7 +59,7 @@ export default function App() {
               summary={`Gateway lifecycle is live. Current connection state: ${gatewayStatus}.`}
             />
           </section>
-          <Composer />
+          <Composer pendingContextPath={pendingContextPath} />
         </main>
       </div>
       <StatusBar
