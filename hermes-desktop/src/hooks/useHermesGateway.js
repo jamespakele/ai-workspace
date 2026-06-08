@@ -3,6 +3,14 @@ import { invoke } from "@tauri-apps/api/core";
 
 const INITIAL_DELAY_MS = 500;
 const MAX_DELAY_MS = 30_000;
+const CHAT_EVENTS = new Set([
+  "message.delta",
+  "tool.start",
+  "tool.progress",
+  "tool.complete",
+  "message.complete",
+  "session.error",
+]);
 
 function parseMessage(data) {
   if (typeof data !== "string") {
@@ -21,7 +29,7 @@ function getReconnectDelay(attempt) {
   return baseDelay * (0.7 + Math.random() * 0.6);
 }
 
-export function useHermesGateway() {
+export function useHermesGateway({ onChatEvent } = {}) {
   const [status, setStatus] = useState("connecting");
   const [activeModel, setActiveModel] = useState(null);
   const [tokenCount, setTokenCount] = useState(0);
@@ -31,6 +39,11 @@ export function useHermesGateway() {
   const reconnectAttemptRef = useRef(0);
   const hasReachedCeilingRef = useRef(false);
   const configRef = useRef(null);
+  const onChatEventRef = useRef(onChatEvent);
+
+  useEffect(() => {
+    onChatEventRef.current = onChatEvent;
+  }, [onChatEvent]);
 
   useEffect(() => {
     let active = true;
@@ -112,6 +125,10 @@ export function useHermesGateway() {
         }
         default:
           break;
+      }
+
+      if (message.event && CHAT_EVENTS.has(message.event)) {
+        onChatEventRef.current?.(message);
       }
     };
 
