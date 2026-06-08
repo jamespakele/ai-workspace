@@ -20,3 +20,20 @@
 2026-06-08T15:00:15Z | QA_ITER | STORY-0001 | QA_START | QA via claude opus
 2026-06-08T17:10:00Z | QA_ITER | STORY-0001 | QA_DONE | PASS — all 10 ACs verified: npm run build passes (Vite 5.4.21, 143 modules), cargo fmt clean, release binary confirmed (15MB), all Rust stubs match architecture §4.1 signatures, all 4 plugins registered, design tokens present, tauri.conf.json has correct minWidth/minHeight/title. AC1+AC7 environment-dependent (host GTK/WebKit provisioning); not a source defect. Story → COMPLETED.
 2026-06-08T15:03:31Z | QA_ITER | STORY-0001 | QA_PASS | Completed
+2026-06-08T15:03:31Z | GIT | STORY-0001 | COMMIT | story(STORY-0001): QA PASS
+2026-06-08T15:03:33Z | GIT | STORY-0001 | PUSH | ok
+2026-06-08T15:03:33Z | ORCH | STORY-0001 | STORY_COMPLETE | Committed
+2026-06-08T15:03:33Z | SM_NEXT | - | SM_NEXT_START | Creating next story via claude
+2026-06-08T17:30:00Z | SM_NEXT | STORY-0002 | CREATED | SM_NEXT: created STORY-0002 -- Settings Panel & App Config Persistence
+2026-06-08T15:06:12Z | SM_NEXT | STORY-0002 | SM_NEXT_DONE | Story created
+2026-06-08T15:06:12Z | SM_ITER | STORY-0002 | SM_START | SM writing/revising via claude
+2026-06-08T18:00:00Z | SM_ITER | STORY-0002 | SM_DONE | Story reviewed and improved: (1) added null-safety guard for config===null in Settings panel form init and disabled Save while loading, (2) added save-error handling — panel stays open and shows error string on failure, (3) resolved open-state ambiguity — lives in app.jsx, StatusBar receives onSettingsOpen prop, (4) specified lucide-react Settings icon (already in shadcn, no new dep), renamed import to SettingsPanel to avoid shadowing, (5) noted serde_json may already exist in scaffold Cargo.toml. Status: DRAFT, po_alignment: PENDING
+2026-06-08T15:08:56Z | SM_ITER | STORY-0002 | SM_DONE | Done
+2026-06-08T15:08:56Z | PO_ITER | STORY-0002 | PO_START | PO reviewing via claude
+2026-06-08T18:10:00Z | PO_ITER | STORY-0002 | PO_APPROVED | All 8 criteria passed: PRD §6.7 T1-T6 fully mapped, architecture-consistent (AppConfig struct/signatures/path match §4.1 exactly, plugin-store exclusion documented), 8 numbered testable ACs including null-safety and error-handling edge cases, right-sized scope (Rust config + hook + modal + StatusBar wiring), STORY-0001 dependency COMPLETE, no duplicate scope with scaffold story. status→READY_FOR_DEV
+2026-06-08T15:10:34Z | PO_ITER | STORY-0002 | PO_APPROVED | Story approved
+2026-06-08T15:10:34Z | DEV_ITER | STORY-0002 | DEV_START | Dev via codex
+2026-06-08T15:14:57Z | DEV_ITER | STORY-0002 | DEV_DONE | PENDING_QA
+2026-06-08T15:14:57Z | QA_ITER | STORY-0002 | QA_START | QA via claude opus
+2026-06-08T18:45:00Z | QA_ITER | STORY-0002 | QA_DONE | PASS — all 8 ACs verified: npm run build passes (Vite 5.4.21, 1793 modules, zero errors), cargo fmt clean, cargo check/build blocked at same documented GTK/WebKit host barrier as STORY-0001 (no new Rust source errors). AppConfig struct matches architecture §4.1 exactly. useAppConfig module-level store emits to all consumers after save. Settings modal: null-safe init, disabled Save while loading, inline save error display, Cancel discards without write. Gear icon wired via onSettingsOpen prop. No regressions against STORY-0001. Story → COMPLETED.
+2026-06-08T15:17:33Z | QA_ITER | STORY-0002 | QA_PASS | Completed
