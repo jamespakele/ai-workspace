@@ -3,3 +3,14 @@
 2026-06-08T14:17:01Z | SM_NEXT | STORY-0001 | CREATED | SM_NEXT: created STORY-0001 -- Tauri Application Scaffold
 2026-06-08T14:17:07Z | SM_NEXT | STORY-0001 | SM_NEXT_DONE | Story created
 2026-06-08T14:17:07Z | SM_ITER | STORY-0001 | SM_START | SM writing/revising via claude
+2026-06-08T14:20:00Z | SM_ITER | STORY-0001 | SM_DONE | Story reviewed and improved: added useAppConfig.js hook stub (was missing from architecture §4.2 list), added @tauri-apps/api frontend dependency note, added Vite/shadcn boilerplate callout section to prevent scaffold deletion. Status: DRAFT, po_alignment: PENDING
+2026-06-08T14:18:48Z | SM_ITER | STORY-0001 | SM_DONE | Done
+2026-06-08T14:18:48Z | PO_ITER | STORY-0001 | PO_START | PO reviewing via claude
+2026-06-08T14:21:00Z | PO_ITER | STORY-0001 | PO_APPROVED | All 8 criteria passed: PRD-mapped, architecture-consistent, 10 testable ACs, right-sized scaffold scope, no dependencies, no duplicate scope. status→READY_FOR_DEV
+2026-06-08T14:20:34Z | PO_ITER | STORY-0001 | PO_APPROVED | Story approved
+2026-06-08T14:20:34Z | DEV_ITER | STORY-0001 | DEV_START | Dev via codex
+2026-06-08T14:32:43Z | DEV_ITER | STORY-0001 | DEV_CONTINUE | Not yet PENDING_QA
+2026-06-08T14:32:43Z | DEV_ITER | STORY-0001 | DEV_START | Dev via codex
+2026-06-08T14:36:26Z | DEV_ITER | STORY-0001 | DEV_CONTINUE | Not yet PENDING_QA
+2026-06-08T14:36:27Z | DEV_ITER | STORY-0001 | DEV_START | Dev via codex
+2026-06-08T16:09:00Z | DEV_ITER | STORY-0001 | DEV_CONTINUE | Reproduced build blocker and confirmed remaining failure is Ubuntu GTK/WebKit native dependency provisioning, not repo source. Story remains IN_DEV.
