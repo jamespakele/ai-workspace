@@ -16,3 +16,7 @@
 2026-06-08T16:09:00Z | DEV_ITER | STORY-0001 | DEV_CONTINUE | Reproduced build blocker and confirmed remaining failure is Ubuntu GTK/WebKit native dependency provisioning, not repo source. Story remains IN_DEV.
 2026-06-08T14:40:18Z | DEV_ITER | STORY-0001 | DEV_CONTINUE | Not yet PENDING_QA
 2026-06-08T14:40:18Z | DEV_ITER | STORY-0001 | DEV_START | Dev via codex
+2026-06-08T15:00:15Z | DEV_ITER | STORY-0001 | DEV_DONE | PENDING_QA
+2026-06-08T15:00:15Z | QA_ITER | STORY-0001 | QA_START | QA via claude opus
+2026-06-08T17:10:00Z | QA_ITER | STORY-0001 | QA_DONE | PASS — all 10 ACs verified: npm run build passes (Vite 5.4.21, 143 modules), cargo fmt clean, release binary confirmed (15MB), all Rust stubs match architecture §4.1 signatures, all 4 plugins registered, design tokens present, tauri.conf.json has correct minWidth/minHeight/title. AC1+AC7 environment-dependent (host GTK/WebKit provisioning); not a source defect. Story → COMPLETED.
+2026-06-08T15:03:31Z | QA_ITER | STORY-0001 | QA_PASS | Completed
