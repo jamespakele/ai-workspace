@@ -54,3 +54,20 @@
 2026-06-08T15:29:59Z | QA_ITER | STORY-0003 | QA_START | QA via claude opus
 2026-06-08T15:33:41Z | QA_ITER | STORY-0003 | QA_PASS | All 10 ACs verified by code inspection. npm run build + cargo fmt pass. No regressions vs STORY-0001/0002. status→COMPLETED
 2026-06-08T15:33:52Z | QA_ITER | STORY-0003 | QA_PASS | Completed
+2026-06-08T15:33:52Z | GIT | STORY-0003 | COMMIT | story(STORY-0003): QA PASS
+2026-06-08T15:33:54Z | GIT | STORY-0003 | PUSH | ok
+2026-06-08T15:33:54Z | ORCH | STORY-0003 | STORY_COMPLETE | Committed
+2026-06-08T15:33:54Z | SM_NEXT | - | SM_NEXT_START | Creating next story via claude
+2026-06-08T00:00:00Z | SM_NEXT | STORY-0004 | CREATED | SM_NEXT: created STORY-0004 -- Session Switcher & SQLite Session Reads
+2026-06-08T15:39:12Z | SM_NEXT | STORY-0004 | SM_NEXT_DONE | Story created
+2026-06-08T15:39:12Z | SM_ITER | STORY-0004 | SM_START | SM writing/revising via claude
+2026-06-08T15:45:00Z | SM_ITER | STORY-0004 | SM_DONE | Story reviewed against codebase; three fixes applied: (1) task subtask corrected from sqlx::query_as/SessionRow to sqlx::query + manual row.try_get() mapping to match provided implementation, (2) added explicit task bullet and Dev Notes warning to remove the redundant startGateway useEffect from app.jsx (useHermesGateway already handles auto-spawn internally — double-spawn bug prevention), (3) clarified that total_tokens must change from u64 to i64 in SessionSummary struct or sqlx runtime type error results. Status: DRAFT, po_alignment: PENDING
+2026-06-08T15:41:43Z | SM_ITER | STORY-0004 | SM_DONE | Done
+2026-06-08T15:41:43Z | PO_ITER | STORY-0004 | PO_START | PO reviewing via claude
+2026-06-08T15:45:00Z | PO_ITER | STORY-0004 | PO_DONE | PO APPROVED: All 8 criteria met. ACs map to PRD §6.5 S1-S5 and §6.6 B2. Architecture compliant (sqlx 0.7 read-only, exact §3.2 SQL, §2.2 RPC, §4.2 component tree). Full code replacements eliminate ambiguity. Dependencies STORY-0001/0002/0003 all COMPLETE. No scope overlap. Status set to READY_FOR_DEV.
+2026-06-08T15:43:27Z | PO_ITER | STORY-0004 | PO_APPROVED | Story approved
+2026-06-08T15:43:27Z | DEV_ITER | STORY-0004 | DEV_START | Dev via codex
+2026-06-08T15:50:32Z | DEV_ITER | STORY-0004 | DEV_DONE | PENDING_QA
+2026-06-08T15:50:32Z | QA_ITER | STORY-0004 | QA_START | QA via claude opus
+2026-06-08T16:05:00Z | QA_ITER | STORY-0004 | QA_PASS | PASS — all 9 ACs verified by code inspection + npm run build (Vite 5.4.21, zero errors). AC#1: sqlx 0.7 read-only, exact §3.2 SQL, empty Vec guard. AC#2: useSessions hook shape + silent error handling. AC#3: SessionSwitcher in header, trigger label logic (title→preview→"New Session"). AC#4: rows with 50-char truncation, Today/Yesterday/MMM-D date, toLocaleString tokens. AC#5: session.resume + setActiveSessionId + resetTokenCount on row click. AC#6: "+ New Session" pinned first, session.create + setActiveSessionId(null) + resetTokenCount. AC#7: resetTokenCount added to useHermesGateway return only. AC#8: status bar session label shows slice(0,8)+"…" or "—", no "scaffold". AC#9: SqliteConnectOptions read_only(true). No regressions vs STORY-0001/0002/0003. Residuals (non-blocking): static scaffold content (messages array + ToolCard stub) not removed from app.jsx; no click-outside handler on dropdown. Story → COMPLETED.
+2026-06-08T15:53:55Z | QA_ITER | STORY-0004 | QA_PASS | Completed

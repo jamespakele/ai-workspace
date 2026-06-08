@@ -1,7 +1,8 @@
 ---
 story_id: "STORY-0004"
 title: "Session Switcher & SQLite Session Reads"
-status: "PENDING_QA"
+status: "COMPLETED"
+qa_status: "PASS"
 po_alignment: "APPROVED"
 created_at: "2026-06-08"
 updated_at: "2026-06-08"
@@ -498,3 +499,40 @@ GPT-5 Codex
 - `hermes-desktop/src/components/session-switcher.jsx`
 - `hermes-desktop/src/components/statusbar.jsx`
 - `hermes-desktop/src/app.jsx`
+
+## QA Notes
+
+**QA Result: PASS** — 2026-06-08
+
+### What was tested
+
+All 9 acceptance criteria verified by direct code inspection of every file listed in Implementation Notes, plus `npm run build` (Vite production build, zero errors, 225 kB JS bundle).
+
+### AC-by-AC results
+
+| AC | Result | Evidence |
+|----|--------|---------|
+| #1 `list_sessions` — sqlx 0.7, read-only, exact SQL, empty Vec when DB absent | ✅ PASS | `sessions.rs`: `SqliteConnectOptions::new().filename(&db_path).read_only(true)`; `db_path.exists()` guard returns `Ok(vec![])` early; SQL query matches architecture §3.2 verbatim; `LIMIT 50` + `ORDER BY s.started_at DESC` present |
+| #2 `useSessions` hook shape | ✅ PASS | `useSessions.js` exports `{ sessions, activeSessionId, setActiveSessionId, refresh }`; `activeSessionId` initialised to `null`; mount effect calls `invoke("list_sessions")`; errors logged silently |
+| #3 `SessionSwitcher` in `<header>`, trigger label logic | ✅ PASS | `app.jsx` renders `<SessionSwitcher>` inside `<header>`; trigger label resolves to `getSessionLabel(activeSession, 63)` (title → preview → "Untitled") or `"New Session"` when no active session |
+| #4 Dropdown rows: title/preview ≤50 chars, date format, toLocaleString tokens | ✅ PASS | `getSessionLabel(session, 50)` for row titles; `formatDate` returns "Today"/"Yesterday"/"MMM D" (verified with Node.js eval); `Number(session.total_tokens ?? 0).toLocaleString()` |
+| #5 Session row click: `session.resume`, `setActiveSessionId`, `resetTokenCount` | ✅ PASS | `handleResumeSession` calls all three in order |
+| #6 `"+ New Session"` pinned first: `session.create`, `setActiveSessionId(null)`, `resetTokenCount` | ✅ PASS | `handleNewSession` sends `send("session.create", {})`, `setActiveSessionId(null)`, `resetTokenCount()` |
+| #7 `resetTokenCount` added to `useHermesGateway` return, no other changes | ✅ PASS | `const resetTokenCount = useCallback(() => setTokenCount(0), [])` inside hook; added to return object; existing shape unchanged |
+| #8 Status bar renders `activeSessionId.slice(0,8)+"…"` or `"—"`; no hardcoded "scaffold" | ✅ PASS | `statusbar.jsx`: `{activeSessionId ? \`${activeSessionId.slice(0, 8)}…\` : "—"}`; "scaffold" string absent |
+| #9 SQLite connection read-only | ✅ PASS | `SqliteConnectOptions::new().filename(&db_path).read_only(true)` — exact match |
+
+### Regression checks
+
+- **STORY-0001/0002**: `StatusBar` prop signature now includes `activeSessionId` — `app.jsx` passes it correctly; settings panel wiring unchanged.
+- **STORY-0003**: Duplicate `startGateway` `useEffect` confirmed absent from `app.jsx`; `useHermesGateway` existing shape (`status`, `send`, `activeModel`, `tokenCount`) preserved.
+- `npm run build` clean (zero warnings, zero errors).
+
+### Pass confidence
+
+High. All ACs map 1:1 to implemented code. Build passes. No regressions detected.
+
+### Residual risks (non-blocking)
+
+1. **Static scaffold not cleaned up** — `app.jsx` still contains the `messages` const and `<ToolCard>` scaffold stub that Dev Notes said to remove. Does not violate any AC; deferred to a future housekeeping pass.
+2. **No click-outside handler on dropdown** — the Dev Notes spec showed a fixed overlay `<div>` to close the dropdown on outside click; the implementation omits it. The dropdown closes only via the trigger button. Not an AC requirement but a minor UX gap.
