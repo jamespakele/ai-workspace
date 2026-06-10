@@ -3,3 +3,9 @@ _bmad/.prompt-tmp.md
 __pycache__/
 *.pyc
 .venv/
+
+# Rust build artifacts
+hermes-desktop/hermes-core/target/
+
+# Node
+node_modules/

@@ -10,6 +10,8 @@ const CHAT_EVENTS = new Set([
   "tool.complete",
   "message.complete",
   "session.error",
+  "permission.request",
+  "plan.update",
 ]);
 
 function parseMessage(data) {

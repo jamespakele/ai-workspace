@@ -1,5 +1,13 @@
 import { Settings } from "lucide-react";
 
+import { computeContextUsage } from "@/lib/context-usage";
+
+const contextLevelClassName = {
+  ok: "text-muted",
+  warn: "text-yellow-400",
+  critical: "text-red-400",
+};
+
 const statusClassName = {
   connecting: "bg-gray-400",
   connected: "bg-green-400",
@@ -12,8 +20,11 @@ export function StatusBar({
   activeModel,
   activeSessionId,
   tokenCount,
+  contextWindow,
   onSettingsOpen,
 }) {
+  const usage = computeContextUsage(tokenCount, contextWindow);
+
   return (
     <footer className="flex h-statusbar items-center justify-between border-t border-border bg-sidebar px-4 font-mono text-xs text-muted">
       <div className="flex items-center gap-3">
@@ -29,6 +40,12 @@ export function StatusBar({
         <span>project: none</span>
         <span>session: {activeSessionId ? `${activeSessionId.slice(0, 8)}…` : "—"}</span>
         <span>tokens: {tokenCount.toLocaleString()}</span>
+        <span
+          data-testid="context-usage"
+          className={contextLevelClassName[usage.level]}
+        >
+          ctx {usage.percent}%
+        </span>
         <button
           type="button"
           onClick={onSettingsOpen}

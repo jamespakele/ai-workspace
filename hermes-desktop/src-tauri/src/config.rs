@@ -14,6 +14,9 @@ pub struct AppConfig {
     pub auto_start_gateway: bool,
     #[serde(default)]
     pub active_project: String,
+    /// Context window size (tokens) for the status bar usage indicator.
+    #[serde(default)]
+    pub context_window: Option<u64>,
 }
 
 impl Default for AppConfig {
@@ -23,6 +26,7 @@ impl Default for AppConfig {
             gateway_url: default_gateway_url(),
             auto_start_gateway: false,
             active_project: String::new(),
+            context_window: None,
         }
     }
 }

@@ -11,6 +11,35 @@ pub struct SkillImportResult {
 }
 
 #[tauri::command]
+pub fn list_skills() -> Result<Vec<SkillImportResult>, String> {
+    let home = dirs::home_dir().ok_or_else(|| "Cannot find home directory".to_string())?;
+    let skills_dir = home.join(".hermes").join("skills");
+    if !skills_dir.is_dir() {
+        return Ok(Vec::new());
+    }
+
+    let entries = fs::read_dir(&skills_dir).map_err(|error| error.to_string())?;
+    let mut skills = Vec::new();
+
+    for entry in entries.filter_map(|entry| entry.ok()) {
+        let skill_md = entry.path().join("SKILL.md");
+        let Ok(content) = fs::read_to_string(&skill_md) else {
+            continue;
+        };
+
+        if let Ok((name, trigger_phrases)) = parse_frontmatter(&content) {
+            skills.push(SkillImportResult {
+                name,
+                trigger_phrases,
+            });
+        }
+    }
+
+    skills.sort_by(|left, right| left.name.cmp(&right.name));
+    Ok(skills)
+}
+
+#[tauri::command]
 pub fn import_skill(path: String) -> Result<SkillImportResult, String> {
     let skill_md = read_skill_md(&path)?;
     let (name, trigger_phrases) = parse_frontmatter(&skill_md)?;
