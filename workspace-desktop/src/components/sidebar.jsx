@@ -1,20 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@/lib/api";
 
-const IS_TAURI = typeof window !== "undefined" && Boolean(window.__TAURI_INTERNALS__);
-
-async function openFolderPicker() {
-  if (IS_TAURI) {
-    const { open } = await import("@tauri-apps/plugin-dialog");
-    return open({ directory: true });
-  }
-  // Fallback for browser: prompt for path
-  return window.prompt("Enter project directory path:");
-}
-
+import { FolderBrowser } from "@/components/folder-browser";
 import { useAppConfig } from "@/hooks/useAppConfig";
 import { useFileTree } from "@/hooks/useFileTree";
 import { useProjects } from "@/hooks/useProjects";
+
+const IS_TAURI = typeof window !== "undefined" && Boolean(window.__TAURI_INTERNALS__);
 
 function basename(path) {
   if (!path) {
@@ -153,15 +145,29 @@ export function Sidebar({
     }
   };
 
+  const [folderBrowserOpen, setFolderBrowserOpen] = useState(false);
+
   const handleNewProject = async () => {
-    try {
-      const selection = await openFolderPicker();
-      const path = typeof selection === "string" ? selection : null;
-
-      if (!path) {
-        return;
+    if (IS_TAURI) {
+      // Desktop: use native file dialog
+      try {
+        const { open } = await import("@tauri-apps/plugin-dialog");
+        const selection = await open({ directory: true });
+        const path = typeof selection === "string" ? selection : null;
+        if (!path) return;
+        await addProject(path);
+        await activateProject(path);
+      } catch (error) {
+        console.error("new project flow failed:", error);
       }
+    } else {
+      // Browser: open server-side folder browser
+      setFolderBrowserOpen(true);
+    }
+  };
 
+  const handleFolderSelected = async (path) => {
+    try {
       await addProject(path);
       await activateProject(path);
     } catch (error) {
@@ -383,6 +389,13 @@ export function Sidebar({
       <div
         className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-accent/30 active:bg-accent/50"
         onMouseDown={onResizeStart}
+      />
+
+      {/* Server-side folder browser (browser mode only) */}
+      <FolderBrowser
+        open={folderBrowserOpen}
+        onClose={() => setFolderBrowserOpen(false)}
+        onSelect={handleFolderSelected}
       />
     </aside>
   );

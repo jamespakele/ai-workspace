@@ -115,6 +115,17 @@ async fn handle_read_file(
     Ok(Json(result))
 }
 
+async fn handle_browse_roots() -> impl IntoResponse {
+    Json(workspace_core::fs::browse_roots())
+}
+
+async fn handle_read_dir_browsable(
+    Json(req): Json<PathRequest>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let result = workspace_core::fs::read_dir_browsable(req.path).map_err(err_to_response)?;
+    Ok(Json(result))
+}
+
 async fn handle_list_sessions() -> Result<impl IntoResponse, (StatusCode, String)> {
     let result = workspace_core::sessions::list_sessions().map_err(err_to_response)?;
     Ok(Json(result))
@@ -222,6 +233,8 @@ async fn main() {
         // Filesystem
         .route("/api/fs/read_dir", post(handle_read_dir))
         .route("/api/fs/read_file", post(handle_read_file))
+        .route("/api/fs/browse_roots", get(handle_browse_roots))
+        .route("/api/fs/read_dir_browsable", post(handle_read_dir_browsable))
         // Sessions
         .route("/api/sessions", get(handle_list_sessions))
         // Skills

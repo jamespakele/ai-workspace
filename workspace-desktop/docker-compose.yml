@@ -5,6 +5,9 @@ services:
       - "3000:3000"
     volumes:
       - workspace-data:/home/workspace/.workspace
+      # Mount your host project directories here.
+      # The folder browser will show /projects as a root.
+      - ${PROJECTS_DIR:-.}:/projects:ro
     environment:
       - PORT=3000
     restart: unless-stopped

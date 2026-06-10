@@ -131,6 +131,16 @@ fn install_skill_package(file_path: String) -> Result<String, String> {
     workspace::install_skill_package(file_path)
 }
 
+#[tauri::command]
+fn browse_roots() -> Vec<fs::DirEntry> {
+    fs::browse_roots()
+}
+
+#[tauri::command]
+fn read_dir_browsable(path: String) -> Result<Vec<fs::DirEntry>, String> {
+    fs::read_dir_browsable(path)
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -146,6 +156,8 @@ fn main() {
             add_project,
             read_dir,
             read_file,
+            browse_roots,
+            read_dir_browsable,
             import_skill,
             list_skills,
             list_scheduled_tasks,
@@ -166,3 +178,4 @@ fn main() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+

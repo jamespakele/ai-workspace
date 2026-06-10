@@ -31,6 +31,8 @@ const COMMAND_MAP = {
   // Filesystem
   read_dir:               { method: "POST",   url: "/api/fs/read_dir" },
   read_file:              { method: "POST",   url: "/api/fs/read_file" },
+  browse_roots:           { method: "GET",    url: "/api/fs/browse_roots" },
+  read_dir_browsable:     { method: "POST",   url: "/api/fs/read_dir_browsable" },
 
   // Skills (legacy)
   import_skill:           { method: "POST",   url: "/api/skills/import" },

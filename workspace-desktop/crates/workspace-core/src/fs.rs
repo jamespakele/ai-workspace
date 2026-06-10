@@ -102,3 +102,76 @@ pub fn read_dir(path: String) -> Result<Vec<DirEntry>, String> {
 
     Ok(entries)
 }
+
+/// Returns sensible root directories for server-side folder browsing.
+/// In Docker, checks for /projects mount. Also includes home dir.
+pub fn browse_roots() -> Vec<DirEntry> {
+    let mut roots = Vec::new();
+
+    // Docker convention: mounted project directory
+    let projects_dir = std::path::Path::new("/projects");
+    if projects_dir.is_dir() {
+        roots.push(DirEntry {
+            name: "projects".to_string(),
+            path: "/projects".to_string(),
+            is_dir: true,
+        });
+    }
+
+    // Home directory
+    if let Some(home) = dirs::home_dir() {
+        roots.push(DirEntry {
+            name: home.file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| "home".to_string()),
+            path: home.to_string_lossy().to_string(),
+            is_dir: true,
+        });
+    }
+
+    // Root filesystem (for full browsing)
+    roots.push(DirEntry {
+        name: "/".to_string(),
+        path: "/".to_string(),
+        is_dir: true,
+    });
+
+    roots
+}
+
+/// Like read_dir but shows ALL directories (no filtering) for folder picker browsing.
+/// Only returns directories, not files.
+pub fn read_dir_browsable(path: String) -> Result<Vec<DirEntry>, String> {
+    let dir = std::path::Path::new(&path);
+    if !dir.is_dir() {
+        return Err(format!("Not a directory: {path}"));
+    }
+
+    let read = std::fs::read_dir(dir).map_err(|e| e.to_string())?;
+
+    let mut entries: Vec<DirEntry> = read
+        .filter_map(|entry| entry.ok())
+        .filter_map(|entry| {
+            let is_dir = entry.file_type().ok()?.is_dir();
+            if !is_dir {
+                return None;
+            }
+
+            let name = entry.file_name().to_string_lossy().to_string();
+            // Skip truly internal dirs but keep most
+            if name == "." || name == ".." {
+                return None;
+            }
+
+            Some(DirEntry {
+                name,
+                path: entry.path().to_string_lossy().to_string(),
+                is_dir: true,
+            })
+        })
+        .collect();
+
+    entries.sort_by(|a, b| a.name.cmp(&b.name));
+
+    Ok(entries)
+}
