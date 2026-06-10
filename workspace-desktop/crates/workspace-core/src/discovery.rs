@@ -1,19 +1,14 @@
 use std::net::{SocketAddr, TcpStream};
+use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;
 
-use hermes_core::discovery::{
-    candidate_binary_paths, dedupe_paths, parse_docker_ps, parse_which_output,
-    DEFAULT_GATEWAY_PORT,
-};
-
 const PROBE_TIMEOUT: Duration = Duration::from_millis(300);
+pub const DEFAULT_GATEWAY_PORT: u16 = 8765;
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct HermesInstance {
     pub id: String,
-    /// "binary" (installed executable), "docker" (running container), or
-    /// "running" (a gateway already listening that nothing else explains).
     pub kind: String,
     pub label: String,
     pub hermes_bin: Option<String>,
@@ -21,9 +16,85 @@ pub struct HermesInstance {
     pub reachable: bool,
 }
 
+#[derive(Debug, Clone)]
+pub struct DockerGateway {
+    pub container_id: String,
+    pub name: String,
+    pub image: String,
+    pub host_port: u16,
+}
+
 fn port_is_open(port: u16) -> bool {
     let address = SocketAddr::from(([127, 0, 0, 1], port));
     TcpStream::connect_timeout(&address, PROBE_TIMEOUT).is_ok()
+}
+
+fn parse_which_output(stdout: &str) -> Vec<String> {
+    stdout
+        .lines()
+        .map(|line| line.trim().to_string())
+        .filter(|line| !line.is_empty())
+        .collect()
+}
+
+fn candidate_binary_paths(home: &std::path::Path) -> Vec<PathBuf> {
+    vec![
+        home.join(".local/bin/hermes"),
+        home.join(".cargo/bin/hermes"),
+        home.join("bin/hermes"),
+    ]
+}
+
+fn dedupe_paths(paths: Vec<String>) -> Vec<String> {
+    let mut seen = std::collections::HashSet::new();
+    paths
+        .into_iter()
+        .filter(|p| seen.insert(p.clone()))
+        .collect()
+}
+
+fn parse_docker_ps(stdout: &str) -> Vec<DockerGateway> {
+    let mut gateways = Vec::new();
+
+    for line in stdout.lines() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+
+        let parsed: serde_json::Value = match serde_json::from_str(line) {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+
+        let name = parsed["Names"].as_str().unwrap_or("").to_string();
+        let image = parsed["Image"].as_str().unwrap_or("").to_string();
+        let id = parsed["ID"].as_str().unwrap_or("").to_string();
+        let ports = parsed["Ports"].as_str().unwrap_or("");
+
+        // Look for hermes-related images
+        if !image.contains("hermes") && !name.contains("hermes") {
+            continue;
+        }
+
+        // Parse ports like "0.0.0.0:8765->8765/tcp"
+        for port_spec in ports.split(',') {
+            if let Some(host_part) = port_spec.split("->").next() {
+                if let Some(port_str) = host_part.rsplit(':').next() {
+                    if let Ok(port) = port_str.trim().parse::<u16>() {
+                        gateways.push(DockerGateway {
+                            container_id: id.clone(),
+                            name: name.clone(),
+                            image: image.clone(),
+                            host_port: port,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    gateways
 }
 
 fn which_all() -> Vec<String> {
@@ -37,7 +108,7 @@ fn which_all() -> Vec<String> {
         .unwrap_or_default()
 }
 
-fn docker_ps() -> Vec<hermes_core::discovery::DockerGateway> {
+fn docker_ps() -> Vec<DockerGateway> {
     Command::new("docker")
         .args(["ps", "--format", "{{json .}}"])
         .output()
@@ -48,11 +119,9 @@ fn docker_ps() -> Vec<hermes_core::discovery::DockerGateway> {
         .unwrap_or_default()
 }
 
-#[tauri::command]
 pub fn discover_hermes() -> Result<Vec<HermesInstance>, String> {
     let mut instances = Vec::new();
 
-    // Installed binaries: PATH plus conventional locations.
     let mut binary_paths = which_all();
     if let Some(home) = dirs::home_dir() {
         for candidate in candidate_binary_paths(&home) {
@@ -75,7 +144,6 @@ pub fn discover_hermes() -> Result<Vec<HermesInstance>, String> {
         });
     }
 
-    // Running docker containers publishing a gateway port.
     let mut docker_claims_default_port = false;
     for gateway in docker_ps() {
         if gateway.host_port == DEFAULT_GATEWAY_PORT {
@@ -92,8 +160,6 @@ pub fn discover_hermes() -> Result<Vec<HermesInstance>, String> {
         });
     }
 
-    // A live gateway on the default port that no binary or container above
-    // accounts for (e.g. started manually in a terminal).
     if default_port_open && instances.is_empty() && !docker_claims_default_port {
         instances.push(HermesInstance {
             id: format!("running:{DEFAULT_GATEWAY_PORT}"),

@@ -2,7 +2,23 @@ use serde::Serialize;
 use std::cmp::Ordering;
 use std::io::Read;
 
-use hermes_core::preview::{is_binary, truncate_utf8, MAX_PREVIEW_BYTES};
+pub const MAX_PREVIEW_BYTES: usize = 256 * 1024;
+
+pub fn is_binary(bytes: &[u8]) -> bool {
+    let check_len = bytes.len().min(8192);
+    bytes[..check_len].contains(&0)
+}
+
+pub fn truncate_utf8(text: &str, max_bytes: usize) -> (&str, bool) {
+    if text.len() <= max_bytes {
+        return (text, false);
+    }
+    let mut end = max_bytes;
+    while end > 0 && !text.is_char_boundary(end) {
+        end -= 1;
+    }
+    (&text[..end], true)
+}
 
 #[derive(Debug, Clone, Serialize, Default)]
 pub struct DirEntry {
@@ -18,15 +34,12 @@ pub struct FilePreview {
     pub binary: bool,
 }
 
-#[tauri::command]
 pub fn read_file(path: String) -> Result<FilePreview, String> {
     let file_path = std::path::Path::new(&path);
     if !file_path.is_file() {
         return Err(format!("Not a file: {path}"));
     }
 
-    // Read at most the preview cap plus one byte so truncation is detectable
-    // without loading huge files into memory.
     let file = std::fs::File::open(file_path).map_err(|error| error.to_string())?;
     let mut bytes = Vec::with_capacity(64 * 1024);
     file.take(MAX_PREVIEW_BYTES as u64 + 1)
@@ -53,7 +66,6 @@ pub fn read_file(path: String) -> Result<FilePreview, String> {
 
 const FILTERED: &[&str] = &["node_modules", "__pycache__", "target"];
 
-#[tauri::command]
 pub fn read_dir(path: String) -> Result<Vec<DirEntry>, String> {
     let dir = std::path::Path::new(&path);
     if !dir.is_dir() {

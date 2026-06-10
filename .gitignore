@@ -5,7 +5,8 @@ __pycache__/
 .venv/
 
 # Rust build artifacts
-hermes-desktop/hermes-core/target/
+**/target/
+dist/
 
 # Node
 node_modules/

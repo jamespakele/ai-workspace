@@ -1,15 +1,27 @@
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
-use hermes_core::schedule::{parse_tasks, serialize_tasks, ScheduledTask};
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ScheduledTask {
+    pub id: String,
+    pub name: String,
+    pub cron: String,
+    pub command: String,
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+}
+
+fn default_true() -> bool {
+    true
+}
 
 fn store_path() -> Result<PathBuf, String> {
     dirs::home_dir()
-        .map(|home| home.join(".hermes").join("scheduled_tasks.json"))
+        .map(|home| home.join(".workspace").join("scheduled_tasks.json"))
         .ok_or_else(|| "Cannot find home directory".to_string())
 }
 
-#[tauri::command]
 pub fn list_scheduled_tasks() -> Result<Vec<ScheduledTask>, String> {
     let path = store_path()?;
     if !path.exists() {
@@ -17,16 +29,15 @@ pub fn list_scheduled_tasks() -> Result<Vec<ScheduledTask>, String> {
     }
 
     let contents = fs::read_to_string(&path).map_err(|error| error.to_string())?;
-    parse_tasks(&contents)
+    serde_json::from_str(&contents).map_err(|error| error.to_string())
 }
 
-#[tauri::command]
 pub fn save_scheduled_tasks(tasks: Vec<ScheduledTask>) -> Result<(), String> {
     let path = store_path()?;
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|error| error.to_string())?;
     }
 
-    let json = serialize_tasks(&tasks)?;
+    let json = serde_json::to_string_pretty(&tasks).map_err(|error| error.to_string())?;
     fs::write(&path, json).map_err(|error| error.to_string())
 }

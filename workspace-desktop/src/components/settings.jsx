@@ -1,7 +1,33 @@
 import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { invoke } from "@/lib/api";
+
+const IS_TAURI = typeof window !== "undefined" && Boolean(window.__TAURI_INTERNALS__);
+
+async function tauriListen(event, handler) {
+  if (!IS_TAURI) return () => {};
+  const { listen } = await import("@tauri-apps/api/event");
+  return listen(event, handler);
+}
+
+async function openDialog(options) {
+  if (!IS_TAURI) {
+    // In browser mode, use a native file input
+    return new Promise((resolve) => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = (options?.filters?.[0]?.extensions || [])
+        .map((e) => `.${e}`)
+        .join(",");
+      input.onchange = () => {
+        const file = input.files?.[0];
+        resolve(file ? file.name : null);
+      };
+      input.click();
+    });
+  }
+  const { open } = await import("@tauri-apps/plugin-dialog");
+  return open(options);
+}
 import { Dialog } from "radix-ui";
 
 import { Button } from "@/components/ui/button";
@@ -211,7 +237,7 @@ export function SettingsPanel({ open, onClose }) {
     let cleanup = [];
 
     Promise.all([
-      listen("tauri://drag-drop", (event) => {
+      tauriListen("tauri://drag-drop", (event) => {
         setIsDragging(false);
         const packagePath = event.payload.paths?.find((path) => {
           const lower = path.toLowerCase();
@@ -222,10 +248,10 @@ export function SettingsPanel({ open, onClose }) {
           void doImport(packagePath);
         }
       }),
-      listen("tauri://drag-enter", () => {
+      tauriListen("tauri://drag-enter", () => {
         setIsDragging(true);
       }),
-      listen("tauri://drag-leave", () => {
+      tauriListen("tauri://drag-leave", () => {
         setIsDragging(false);
       }),
     ])

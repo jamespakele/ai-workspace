@@ -10,10 +10,9 @@ pub struct SkillImportResult {
     pub trigger_phrases: Vec<String>,
 }
 
-#[tauri::command]
 pub fn list_skills() -> Result<Vec<SkillImportResult>, String> {
     let home = dirs::home_dir().ok_or_else(|| "Cannot find home directory".to_string())?;
-    let skills_dir = home.join(".hermes").join("skills");
+    let skills_dir = home.join(".workspace").join("skills");
     if !skills_dir.is_dir() {
         return Ok(Vec::new());
     }
@@ -39,13 +38,12 @@ pub fn list_skills() -> Result<Vec<SkillImportResult>, String> {
     Ok(skills)
 }
 
-#[tauri::command]
 pub fn import_skill(path: String) -> Result<SkillImportResult, String> {
     let skill_md = read_skill_md(&path)?;
     let (name, trigger_phrases) = parse_frontmatter(&skill_md)?;
 
     let home = dirs::home_dir().ok_or_else(|| "Cannot find home directory".to_string())?;
-    let skill_dir = home.join(".hermes").join("skills").join(&name);
+    let skill_dir = home.join(".workspace").join("skills").join(&name);
     fs::create_dir_all(&skill_dir).map_err(|error| error.to_string())?;
 
     let file = File::open(&path).map_err(|error| error.to_string())?;

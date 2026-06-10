@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "@/lib/api";
 
 /**
  * Hook to load workspace context (soul.md, os.md, skills) from the backend.

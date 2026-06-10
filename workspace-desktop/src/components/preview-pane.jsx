@@ -1,5 +1,17 @@
 import { useEffect, useState } from "react";
-import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { invoke } from "@/lib/api";
+
+// In Tauri, convertFileSrc maps file:// paths to the asset protocol.
+// In the browser, we serve images through the API instead.
+const IS_TAURI = typeof window !== "undefined" && Boolean(window.__TAURI_INTERNALS__);
+
+async function convertFileSrc(path) {
+  if (IS_TAURI) {
+    const { convertFileSrc: tauriConvert } = await import("@tauri-apps/api/core");
+    return tauriConvert(path);
+  }
+  return `/api/fs/file?path=${encodeURIComponent(path)}`;
+}
 
 import { Markdown } from "./markdown";
 

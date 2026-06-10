@@ -1,5 +1,5 @@
 use std::process::Command;
-use super::harness::{ChatResponse, clean_output};
+use crate::harness::{ChatResponse, clean_output};
 
 /// Hermes (NousResearch) — full-featured coding agent.
 /// CLI: `hermes chat -q "text" -Q --resume <id>`

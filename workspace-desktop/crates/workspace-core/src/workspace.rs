@@ -35,7 +35,6 @@ fn project_root(project_dir: &str) -> PathBuf {
 
 /// Load the workspace context for a given project directory.
 /// Merges global + project-level context with project taking priority.
-#[tauri::command]
 pub fn load_workspace(project_dir: Option<String>) -> WorkspaceContext {
     let global = global_root();
 
@@ -72,7 +71,6 @@ pub fn load_workspace(project_dir: Option<String>) -> WorkspaceContext {
 }
 
 /// Initialize a fresh global workspace with template soul.md and os.md.
-#[tauri::command]
 pub fn init_workspace() -> Result<String, String> {
     let root = global_root();
     let skills_dir = root.join("skills");
@@ -99,7 +97,6 @@ pub fn init_workspace() -> Result<String, String> {
 }
 
 /// Scope a skill to a project by creating a symlink.
-#[tauri::command]
 pub fn scope_skill_to_project(
     skill_name: String,
     project_dir: String,
@@ -130,7 +127,6 @@ pub fn scope_skill_to_project(
 }
 
 /// Remove a skill symlink from a project.
-#[tauri::command]
 pub fn unscope_skill_from_project(
     skill_name: String,
     project_dir: String,
@@ -145,7 +141,6 @@ pub fn unscope_skill_from_project(
 }
 
 /// List all globally installed skills (in ~/.workspace/skills/).
-#[tauri::command]
 pub fn list_global_skills() -> Vec<SkillInfo> {
     let mut skills = Vec::new();
     collect_skills(&global_root().join("skills"), &mut skills);
@@ -153,7 +148,6 @@ pub fn list_global_skills() -> Vec<SkillInfo> {
 }
 
 /// List skills scoped to a project (symlinks in <project>/.workspace/skills/).
-#[tauri::command]
 pub fn list_project_skills(project_dir: String) -> Vec<SkillInfo> {
     let mut skills = Vec::new();
     collect_skills(&project_root(&project_dir).join("skills"), &mut skills);
@@ -161,9 +155,6 @@ pub fn list_project_skills(project_dir: String) -> Vec<SkillInfo> {
 }
 
 /// Install a packaged skill or plugin from a .skill or .plugin zip file.
-/// .skill files are extracted to ~/.workspace/skills/<package-name>/
-/// .plugin files are extracted to ~/.workspace/plugins/<package-name>/
-#[tauri::command]
 pub fn install_skill_package(file_path: String) -> Result<String, String> {
     let path = Path::new(&file_path);
     if !path.exists() {
@@ -185,7 +176,6 @@ pub fn install_skill_package(file_path: String) -> Result<String, String> {
     std::fs::create_dir_all(&target_parent)
         .map_err(|e| format!("Failed to create target dir: {e}"))?;
 
-    // Derive the package name from the filename (strip extension).
     let package_name = path
         .file_stem()
         .and_then(|s| s.to_str())
@@ -194,7 +184,6 @@ pub fn install_skill_package(file_path: String) -> Result<String, String> {
 
     let target_dir = target_parent.join(&package_name);
 
-    // If already installed, remove first (upgrade).
     if target_dir.exists() {
         std::fs::remove_dir_all(&target_dir)
             .map_err(|e| format!("Failed to remove existing package: {e}"))?;
@@ -203,7 +192,6 @@ pub fn install_skill_package(file_path: String) -> Result<String, String> {
     std::fs::create_dir_all(&target_dir)
         .map_err(|e| format!("Failed to create package dir: {e}"))?;
 
-    // Open the zip and extract.
     let file = std::fs::File::open(path)
         .map_err(|e| format!("Failed to open package file: {e}"))?;
 
@@ -240,7 +228,6 @@ pub fn install_skill_package(file_path: String) -> Result<String, String> {
 }
 
 /// Build the context string to prepend to every agent prompt.
-/// Format: soul.md content + os.md content, separated by headers.
 pub fn build_context_prefix(ctx: &WorkspaceContext) -> String {
     let mut prefix = String::new();
 
@@ -295,14 +282,12 @@ fn collect_skills(dir: &Path, skills: &mut Vec<SkillInfo>) {
     }
 }
 
-/// Parse the description from SKILL.md YAML frontmatter.
 fn parse_skill_description(path: &Path) -> String {
     let content = match std::fs::read_to_string(path) {
         Ok(c) => c,
         Err(_) => return String::new(),
     };
 
-    // Simple frontmatter parser: look for description: between --- markers.
     let mut in_frontmatter = false;
     for line in content.lines() {
         if line.trim() == "---" {

@@ -10,14 +10,14 @@ pub struct Project {
     pub path: String,
 }
 
-fn hermes_dir() -> Result<PathBuf, String> {
-    std::env::var("HOME")
-        .map(|home| PathBuf::from(home).join(".hermes"))
-        .map_err(|error| error.to_string())
+fn workspace_dir() -> Result<PathBuf, String> {
+    dirs::home_dir()
+        .map(|home| home.join(".workspace"))
+        .ok_or_else(|| "Cannot determine home directory".to_string())
 }
 
 fn load_projects() -> Vec<Project> {
-    let path = match hermes_dir() {
+    let path = match workspace_dir() {
         Ok(dir) => dir.join("projects.json"),
         Err(_) => return Vec::new(),
     };
@@ -38,12 +38,10 @@ fn path_id(path: &str) -> String {
     format!("{:016x}", hasher.finish())
 }
 
-#[tauri::command]
 pub fn list_projects() -> Result<Vec<Project>, String> {
     Ok(load_projects())
 }
 
-#[tauri::command]
 pub fn add_project(path: String) -> Result<(), String> {
     let mut projects = load_projects();
     if projects.iter().any(|project| project.path == path) {
@@ -61,7 +59,7 @@ pub fn add_project(path: String) -> Result<(), String> {
         path,
     });
 
-    let dir = hermes_dir()?;
+    let dir = workspace_dir()?;
     std::fs::create_dir_all(&dir).map_err(|error| error.to_string())?;
 
     let json = serde_json::to_string_pretty(&projects).map_err(|error| error.to_string())?;

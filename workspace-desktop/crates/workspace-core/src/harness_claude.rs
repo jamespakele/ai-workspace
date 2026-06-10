@@ -1,5 +1,5 @@
 use std::process::Command;
-use super::harness::{ChatResponse, clean_output};
+use crate::harness::{ChatResponse, clean_output};
 
 /// Claude Code (Anthropic) — CLI coding agent.
 /// CLI: `claude -p "text" --output-format text --resume <id>`

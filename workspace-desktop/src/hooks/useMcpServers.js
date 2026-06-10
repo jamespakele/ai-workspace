@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "@/lib/api";
 
 // Connector (MCP server) management backed by ~/.hermes/mcp.json.
 export function useMcpServers() {

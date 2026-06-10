@@ -1,5 +1,5 @@
 use std::process::Command;
-use super::harness::{ChatResponse, clean_output};
+use crate::harness::{ChatResponse, clean_output};
 
 /// Pi (pi.dev) — open source barebones coding agent.
 /// 4 core tools: Read, Write, Edit, Bash.

@@ -18,7 +18,6 @@ pub struct AgentInfo {
 }
 
 /// Discover which agent CLIs are installed on the system.
-#[tauri::command]
 pub fn discover_agents() -> Vec<AgentInfo> {
     let candidates = [
         ("hermes", &["hermes"][..]),
@@ -49,7 +48,6 @@ pub fn discover_agents() -> Vec<AgentInfo> {
 
 /// Dispatch a prompt to the right agent harness.
 /// Loads workspace context (soul.md + os.md) and prepends it to every prompt.
-#[tauri::command]
 pub fn send_prompt(
     agent: Option<String>,
     hermes_bin: Option<String>,
@@ -62,8 +60,8 @@ pub fn send_prompt(
     }
 
     // Load workspace context and prepend soul + os to the prompt.
-    let workspace_ctx = super::workspace::load_workspace(cwd.clone());
-    let prefix = super::workspace::build_context_prefix(&workspace_ctx);
+    let workspace_ctx = crate::workspace::load_workspace(cwd.clone());
+    let prefix = crate::workspace::build_context_prefix(&workspace_ctx);
     let full_prompt = if prefix.is_empty() {
         text
     } else {
@@ -73,11 +71,11 @@ pub fn send_prompt(
     let agent_name = agent.as_deref().unwrap_or("hermes");
 
     match agent_name {
-        "hermes" => super::harness_hermes::send(hermes_bin, full_prompt, session_id, cwd),
-        "claude" => super::harness_claude::send(full_prompt, session_id, cwd),
-        "gemini" => super::harness_gemini::send(full_prompt, session_id, cwd),
-        "codex" => super::harness_codex::send(full_prompt, session_id, cwd),
-        "pi" => super::harness_pi::send(full_prompt, session_id, cwd),
+        "hermes" => crate::harness_hermes::send(hermes_bin, full_prompt, session_id, cwd),
+        "claude" => crate::harness_claude::send(full_prompt, session_id, cwd),
+        "gemini" => crate::harness_gemini::send(full_prompt, session_id, cwd),
+        "codex" => crate::harness_codex::send(full_prompt, session_id, cwd),
+        "pi" => crate::harness_pi::send(full_prompt, session_id, cwd),
         other => Err(format!("Unknown agent: {other}")),
     }
 }
@@ -94,17 +92,9 @@ fn which_bin(name: &str) -> Option<String> {
         .filter(|s| !s.is_empty())
 }
 
-fn get_version(bin: &str, agent_name: &str) -> String {
-    let flag = match agent_name {
-        "hermes" => "--version",
-        "claude" => "--version",
-        "gemini" => "--version",
-        "codex" => "--version",
-        _ => "--version",
-    };
-
+fn get_version(bin: &str, _agent_name: &str) -> String {
     Command::new(bin)
-        .arg(flag)
+        .arg("--version")
         .output()
         .ok()
         .map(|o| {

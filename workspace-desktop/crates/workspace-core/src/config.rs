@@ -14,7 +14,8 @@ pub struct AppConfig {
     pub auto_start_gateway: bool,
     #[serde(default)]
     pub active_project: String,
-    /// Context window size (tokens) for the status bar usage indicator.
+    #[serde(default)]
+    pub agent: String,
     #[serde(default)]
     pub context_window: Option<u64>,
 }
@@ -26,6 +27,7 @@ impl Default for AppConfig {
             gateway_url: default_gateway_url(),
             auto_start_gateway: false,
             active_project: String::new(),
+            agent: "hermes".to_string(),
             context_window: None,
         }
     }
@@ -36,9 +38,9 @@ fn default_gateway_url() -> String {
 }
 
 fn config_dir() -> Result<PathBuf, String> {
-    std::env::var("HOME")
-        .map(|home| PathBuf::from(home).join(".config").join("hermes-desktop"))
-        .map_err(|error| error.to_string())
+    dirs::home_dir()
+        .map(|home| home.join(".config").join("workspace-desktop"))
+        .ok_or_else(|| "Cannot determine home directory".to_string())
 }
 
 fn config_path() -> Result<PathBuf, String> {
@@ -62,8 +64,7 @@ fn detect_hermes_bin() -> String {
         .unwrap_or_default()
 }
 
-#[tauri::command]
-pub async fn get_config(_app_handle: tauri::AppHandle) -> Result<AppConfig, String> {
+pub fn get_config() -> Result<AppConfig, String> {
     let path = config_path()?;
     if !path.exists() {
         return Ok(AppConfig {
@@ -76,8 +77,7 @@ pub async fn get_config(_app_handle: tauri::AppHandle) -> Result<AppConfig, Stri
     serde_json::from_str(&contents).map_err(|error| error.to_string())
 }
 
-#[tauri::command]
-pub async fn save_config(config: AppConfig) -> Result<(), String> {
+pub fn save_config(config: AppConfig) -> Result<(), String> {
     let dir = config_dir()?;
     fs::create_dir_all(&dir).map_err(|error| error.to_string())?;
 

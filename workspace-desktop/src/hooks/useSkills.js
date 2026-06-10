@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "@/lib/api";
 
 // Imported skills from ~/.hermes/skills, surfaced in the slash-command menu.
 export function useSkills() {

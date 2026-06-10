@@ -1,6 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
-import { open } from "@tauri-apps/plugin-dialog";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "@/lib/api";
+
+const IS_TAURI = typeof window !== "undefined" && Boolean(window.__TAURI_INTERNALS__);
+
+async function openFolderPicker() {
+  if (IS_TAURI) {
+    const { open } = await import("@tauri-apps/plugin-dialog");
+    return open({ directory: true });
+  }
+  // Fallback for browser: prompt for path
+  return window.prompt("Enter project directory path:");
+}
 
 import { useAppConfig } from "@/hooks/useAppConfig";
 import { useFileTree } from "@/hooks/useFileTree";
@@ -145,7 +155,7 @@ export function Sidebar({
 
   const handleNewProject = async () => {
     try {
-      const selection = await open({ directory: true });
+      const selection = await openFolderPicker();
       const path = typeof selection === "string" ? selection : null;
 
       if (!path) {
