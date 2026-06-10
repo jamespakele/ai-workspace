@@ -4,15 +4,6 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { useAppConfig } from "@/hooks/useAppConfig";
 import { useFileTree } from "@/hooks/useFileTree";
 import { useProjects } from "@/hooks/useProjects";
-import { OutputsPanel } from "./outputs-panel";
-import { ScheduledPanel } from "./scheduled-panel";
-
-const TABS = [
-  { id: "files", label: "Files" },
-  { id: "workspace", label: "Workspace" },
-  { id: "scheduled", label: "Scheduled" },
-  { id: "outputs", label: "Outputs" },
-];
 
 function basename(path) {
   if (!path) {
@@ -21,14 +12,6 @@ function basename(path) {
 
   const parts = path.split(/[\\/]/).filter(Boolean);
   return parts.at(-1) ?? path;
-}
-
-function truncateTail(value, length) {
-  if (!value) {
-    return "";
-  }
-
-  return value.length > length ? `…${value.slice(-length)}` : value;
 }
 
 function FileTreeNode({
@@ -82,21 +65,15 @@ function FileTreeNode({
 export function Sidebar({
   onAddToContext,
   onOpenFile,
-  outputs = [],
-  scheduled,
-  activeTab,
-  onTabChange,
-  workspace,
-  agents = [],
-  activeAgent,
-  onAgentChange,
+  width,
+  onResizeStart,
 }) {
   const { config, saveConfig } = useAppConfig();
   const { projects, addProject } = useProjects();
   const activeProjectPath = config?.active_project ?? "";
   const activeProjectName = basename(activeProjectPath);
   const { childrenOf, toggleExpanded, isExpanded, isLoading } = useFileTree(activeProjectPath);
-  const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
+  const [projectMenuOpen, setProjectMenuOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
 
   const rootEntries = childrenOf(activeProjectPath);
@@ -108,7 +85,7 @@ export function Sidebar({
 
     try {
       await saveConfig({ ...config, active_project: path });
-      setProjectDropdownOpen(false);
+      setProjectMenuOpen(false);
     } catch (error) {
       console.error("save_config failed:", error);
     }
@@ -165,234 +142,100 @@ export function Sidebar({
   };
 
   return (
-    <aside className="flex w-sidebar shrink-0 flex-col border-r border-border bg-sidebar">
-      <section className="relative border-b border-border px-4 py-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted">Projects</p>
-            <h2 className="mt-2 truncate text-base font-semibold text-text">
-              {activeProjectName || "Workspace"}
-            </h2>
-            <p className="mt-1 font-mono text-xs text-muted">
-              {activeProjectPath
-                ? truncateTail(activeProjectPath, 30)
-                : projects.length === 0
-                  ? "No projects saved."
-                  : "No project selected."}
-            </p>
+    <aside
+      className="flex shrink-0 flex-col border-r border-border bg-sidebar"
+      style={{ width: `${width}px` }}
+    >
+      {/* Project header */}
+      <div className="relative border-b border-border px-4 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted">Project</p>
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={handleNewProject}
+              className="rounded-lg px-2 py-1 text-xs text-muted transition hover:bg-panel/70 hover:text-text"
+              title="New project"
+            >
+              ＋
+            </button>
+            <button
+              type="button"
+              onClick={() => setProjectMenuOpen((c) => !c)}
+              className="rounded-lg px-2 py-1 text-xs text-muted transition hover:bg-panel/70 hover:text-text"
+              title="Switch project"
+            >
+              ⇄
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setProjectDropdownOpen((current) => !current);
-              closeContextMenu();
-            }}
-            className="rounded-xl border border-border bg-panel/60 px-3 py-2 text-xs uppercase tracking-[0.18em] text-muted transition hover:border-accent/40 hover:text-text"
-          >
-            {projectDropdownOpen ? "Close" : "Switch"}
-          </button>
         </div>
+        {activeProjectName ? (
+          <p className="mt-1 truncate text-sm font-semibold text-text">{activeProjectName}</p>
+        ) : null}
 
-        {projectDropdownOpen ? (
+        {/* Project switcher dropdown */}
+        {projectMenuOpen ? (
           <>
             <button
               type="button"
               aria-label="Close project switcher"
               className="fixed inset-0 z-10 cursor-default"
-              onClick={() => setProjectDropdownOpen(false)}
+              onClick={() => setProjectMenuOpen(false)}
             />
-            <div className="absolute left-4 right-4 top-[calc(100%-0.25rem)] z-20 overflow-hidden rounded-2xl border border-border bg-sidebar shadow-2xl">
-              <button
-                type="button"
-                onClick={handleNewProject}
-                className="flex w-full items-center justify-between border-b border-border px-4 py-3 text-left text-sm text-accent transition hover:bg-panel/80"
-              >
-                <span className="font-medium">＋ New Project</span>
-                <span className="font-mono text-xs uppercase tracking-[0.18em] text-muted">
-                  Folder
-                </span>
-              </button>
-              <div className="max-h-72 overflow-y-auto">
+            <div className="absolute left-3 right-3 top-[calc(100%-0.25rem)] z-20 overflow-hidden rounded-xl border border-border bg-sidebar shadow-2xl">
+              <div className="max-h-64 overflow-y-auto">
                 {projects.map((project) => (
                   <button
                     key={project.id}
                     type="button"
                     onClick={() => void activateProject(project.path)}
-                    className={`block w-full px-4 py-3 text-left transition hover:bg-panel/70 ${
+                    className={`block w-full px-3 py-2.5 text-left transition hover:bg-panel/70 ${
                       project.path === activeProjectPath ? "bg-panel/80" : ""
                     }`}
                   >
                     <p className="truncate text-sm font-medium text-text">{project.name}</p>
-                    <p className="mt-1 font-mono text-xs text-muted">
-                      {truncateTail(project.path, 30)}
-                    </p>
                   </button>
                 ))}
                 {projects.length === 0 ? (
-                  <div className="px-4 py-5 text-sm text-muted">
-                    {activeProjectPath ? "No saved projects." : "No projects saved."}
-                  </div>
+                  <div className="px-3 py-4 text-sm text-muted">No projects saved.</div>
                 ) : null}
               </div>
             </div>
           </>
         ) : null}
-      </section>
+      </div>
 
-      <section className="flex min-h-0 flex-1 flex-col">
-        <div className="flex border-b border-border" role="tablist" aria-label="Sidebar sections">
-          {TABS.map((tab) => (
+      {/* File tree */}
+      <div className="flex-1 overflow-y-auto py-2">
+        {activeProjectPath ? (
+          rootEntries.map((entry) => (
+            <FileTreeNode
+              key={entry.path}
+              entry={entry}
+              depth={0}
+              childrenOf={childrenOf}
+              toggleExpanded={toggleExpanded}
+              isExpanded={isExpanded}
+              isLoading={isLoading}
+              openContextMenu={openContextMenu}
+              onOpenFile={onOpenFile}
+            />
+          ))
+        ) : (
+          <div className="px-4 py-8 text-center text-sm text-muted">
+            <p>No project selected.</p>
             <button
-              key={tab.id}
               type="button"
-              role="tab"
-              aria-selected={activeTab === tab.id}
-              onClick={() => onTabChange(tab.id)}
-              className={`flex-1 px-2 py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] transition ${
-                activeTab === tab.id
-                  ? "border-b-2 border-accent text-text"
-                  : "text-muted hover:text-text"
-              }`}
+              onClick={handleNewProject}
+              className="mt-3 rounded-xl border border-accent/30 bg-accent/5 px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent/10"
             >
-              {tab.label}
+              Open Project
             </button>
-          ))}
-        </div>
-
-        {activeTab === "files" ? (
-          <div className="flex-1 overflow-y-auto py-3">
-            {activeProjectPath ? (
-              rootEntries.map((entry) => (
-                <FileTreeNode
-                  key={entry.path}
-                  entry={entry}
-                  depth={0}
-                  childrenOf={childrenOf}
-                  toggleExpanded={toggleExpanded}
-                  isExpanded={isExpanded}
-                  isLoading={isLoading}
-                  openContextMenu={openContextMenu}
-                  onOpenFile={onOpenFile}
-                />
-              ))
-            ) : (
-              <div className="px-4 text-sm text-muted">No project selected.</div>
-            )}
           </div>
-        ) : null}
+        )}
+      </div>
 
-        {activeTab === "scheduled" && scheduled ? (
-          <ScheduledPanel
-            tasks={scheduled.tasks}
-            onAdd={scheduled.onAdd}
-            onRemove={scheduled.onRemove}
-            onToggle={scheduled.onToggle}
-            createOpen={scheduled.createOpen}
-            onCreateOpenChange={scheduled.onCreateOpenChange}
-          />
-        ) : null}
-
-        {activeTab === "workspace" ? (
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
-            {/* Agent Selector */}
-            <div>
-              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">Agent</p>
-              <select
-                value={activeAgent || ""}
-                onChange={(e) => onAgentChange?.(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-border bg-panel px-3 py-2 text-sm text-text outline-none focus:border-accent"
-              >
-                {agents.length === 0 ? (
-                  <option value="hermes">hermes (default)</option>
-                ) : (
-                  agents.map((a) => (
-                    <option key={a.name} value={a.name}>
-                      {a.name} {a.version ? `(${a.version})` : ""}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-
-            {/* Soul & OS */}
-            <div>
-              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">Always Loaded</p>
-              <div className="mt-2 space-y-1">
-                <button
-                  type="button"
-                  onClick={() => onOpenFile?.("~/.workspace/soul.md")}
-                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition hover:bg-panel/70"
-                >
-                  <span className="text-text">soul.md</span>
-                  <span className={`text-xs ${workspace?.soul ? "text-green-400" : "text-muted"}`}>
-                    {workspace?.soul ? "loaded" : "empty"}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onOpenFile?.("~/.workspace/os.md")}
-                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition hover:bg-panel/70"
-                >
-                  <span className="text-text">os.md</span>
-                  <span className={`text-xs ${workspace?.os ? "text-green-400" : "text-muted"}`}>
-                    {workspace?.os ? "loaded" : "empty"}
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            {/* Skills */}
-            <div>
-              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
-                Skills ({workspace?.skills?.length ?? 0})
-              </p>
-              <ul className="mt-2 space-y-1">
-                {(workspace?.skills ?? []).map((skill) => (
-                  <li
-                    key={skill.name}
-                    className="flex items-center justify-between rounded-lg px-3 py-2 text-sm"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-text">{skill.name}</p>
-                      {skill.description ? (
-                        <p className="mt-0.5 truncate text-xs text-muted">{skill.description}</p>
-                      ) : null}
-                    </div>
-                    {skill.is_symlink ? (
-                      <span className="ml-2 shrink-0 rounded bg-accent/10 px-1.5 py-0.5 text-[10px] font-medium text-accent">
-                        linked
-                      </span>
-                    ) : null}
-                  </li>
-                ))}
-                {(workspace?.skills ?? []).length === 0 ? (
-                  <li className="px-3 py-2 text-sm text-muted">
-                    No skills installed. Add skills to ~/.workspace/skills/
-                  </li>
-                ) : null}
-              </ul>
-            </div>
-
-            {/* Init workspace button */}
-            {!workspace?.soul && !workspace?.os ? (
-              <button
-                type="button"
-                onClick={() => workspace?.initWorkspace?.()}
-                className="w-full rounded-xl border border-accent/30 bg-accent/5 px-3 py-2.5 text-sm font-medium text-accent transition hover:bg-accent/10"
-              >
-                Initialize Workspace
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-
-        {activeTab === "outputs" ? (
-          <div className="flex-1 overflow-y-auto">
-            <OutputsPanel outputs={outputs} onOpen={(path) => onOpenFile?.(path)} />
-          </div>
-        ) : null}
-      </section>
-
+      {/* Context menu */}
       {contextMenu ? (
         <>
           <button
@@ -422,6 +265,12 @@ export function Sidebar({
           </div>
         </>
       ) : null}
+
+      {/* Resize handle */}
+      <div
+        className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-accent/30 active:bg-accent/50"
+        onMouseDown={onResizeStart}
+      />
     </aside>
   );
 }

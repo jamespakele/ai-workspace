@@ -6,61 +6,88 @@ import { SettingsPanel } from "./components/settings";
 import { StatusBar } from "./components/statusbar";
 import { UserMessage, AssistantMessage } from "./components/message";
 import { Composer } from "./components/composer";
-import { SessionSwitcher } from "./components/session-switcher";
-import { PlanPanel } from "./components/plan-panel";
 import { PreviewPane } from "./components/preview-pane";
 import { useSessions } from "./hooks/useSessions";
-import { useSkills } from "./hooks/useSkills";
-import { useScheduledTasks } from "./hooks/useScheduledTasks";
 import { useAppConfig } from "./hooks/useAppConfig";
-import { useWorkspace } from "./hooks/useWorkspace";
 import { useAgents } from "./hooks/useAgents";
 
-function basename(path) {
-  if (!path) {
-    return "";
-  }
+const MIN_SIDEBAR_WIDTH = 180;
+const MAX_SIDEBAR_WIDTH = 480;
+const DEFAULT_SIDEBAR_WIDTH = 260;
 
-  const parts = path.split(/[\\/]/).filter(Boolean);
-  return parts.at(-1) ?? path;
-}
+const MIN_PREVIEW_WIDTH = 260;
+const MAX_PREVIEW_WIDTH = 640;
+const DEFAULT_PREVIEW_WIDTH = 380;
 
 export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pendingContextPath, setPendingContextPath] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [mode, setMode] = useState("ask");
-  const [plan, setPlan] = useState(null);
-  const [outputs, setOutputs] = useState([]);
   const [previewPath, setPreviewPath] = useState(null);
-  const [sidebarTab, setSidebarTab] = useState("files");
-  const [scheduleCreateOpen, setScheduleCreateOpen] = useState(false);
   const messagesEndRef = useRef(null);
 
-  const { sessions, activeSessionId, setActiveSessionId, refresh } = useSessions();
-  const { skills } = useSkills();
+  // Resizable panels
+  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
+  const [previewWidth, setPreviewWidth] = useState(DEFAULT_PREVIEW_WIDTH);
+  const resizingRef = useRef(null);
+
+  const { activeSessionId, setActiveSessionId, refresh } = useSessions();
   const { config, saveConfig } = useAppConfig();
   const { agents } = useAgents();
-  const activeProjectPath = config?.active_project ?? "";
   const activeAgent = config?.agent ?? "hermes";
-  const workspace = useWorkspace(activeProjectPath || null);
-  const {
-    tasks: scheduledTasks,
-    addTask,
-    removeTask,
-    toggleTask,
-  } = useScheduledTasks({});
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Reset per-session state when switching sessions.
+  // ── Resize handlers ────────────────────────────────────────
   useEffect(() => {
-    setPlan(null);
-    setOutputs([]);
-  }, [activeSessionId]);
+    const handleMouseMove = (e) => {
+      if (!resizingRef.current) {
+        return;
+      }
+
+      if (resizingRef.current.panel === "sidebar") {
+        const newWidth = Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, e.clientX));
+        setSidebarWidth(newWidth);
+      } else if (resizingRef.current.panel === "preview") {
+        const newWidth = Math.min(
+          MAX_PREVIEW_WIDTH,
+          Math.max(MIN_PREVIEW_WIDTH, window.innerWidth - e.clientX),
+        );
+        setPreviewWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      resizingRef.current = null;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
+
+  const startSidebarResize = useCallback((e) => {
+    e.preventDefault();
+    resizingRef.current = { panel: "sidebar" };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  }, []);
+
+  const startPreviewResize = useCallback((e) => {
+    e.preventDefault();
+    resizingRef.current = { panel: "preview" };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  }, []);
 
   // ── CLI-based chat: invoke("send_prompt") ──────────────────
   const handleSendPrompt = useCallback(
@@ -70,7 +97,7 @@ export default function App() {
       try {
         const hermesBin =
           config?.hermes_bin || "/home/pakele/.local/bin/hermes";
-        const projectDir = activeProjectPath || undefined;
+        const projectDir = config?.active_project || undefined;
 
         const result = await invoke("send_prompt", {
           agent: activeAgent,
@@ -80,7 +107,6 @@ export default function App() {
           cwd: projectDir ?? null,
         });
 
-        // Store the session ID from the response for --resume on next message.
         if (result.session_id) {
           setActiveSessionId(result.session_id);
         }
@@ -96,7 +122,6 @@ export default function App() {
           },
         ]);
 
-        // Refresh the session list so the sidebar shows the new/updated session.
         refresh();
       } catch (error) {
         setMessages((previous) => [
@@ -113,99 +138,37 @@ export default function App() {
         setIsStreaming(false);
       }
     },
-    [activeSessionId, activeAgent, activeProjectPath, config, refresh, setActiveSessionId],
+    [activeSessionId, activeAgent, config, refresh, setActiveSessionId],
   );
 
-  const handleCompact = () => {
-    // Compact is handled by the CLI's built-in compression.
-    // No-op in CLI mode — agents auto-compress when needed.
-  };
-
-  const handleOpenSchedule = () => {
-    setSidebarTab("scheduled");
-    setScheduleCreateOpen(true);
-  };
-
-  // When resuming a session, load its history from the DB.
-  const handleResumeSession = useCallback(
-    async (sessionId) => {
-      setActiveSessionId(sessionId);
-      setMessages([]);
-      setPlan(null);
-      setOutputs([]);
-
-      try {
-        const history = await invoke("get_session_messages", {
-          sessionId,
-        });
-
-        if (Array.isArray(history) && history.length > 0) {
-          setMessages(
-            history.map((message) => ({
-              id: crypto.randomUUID(),
-              role: message.role === "user" ? "user" : "assistant",
-              content: message.content ?? "",
-              toolCalls: [],
-              isStreaming: false,
-            })),
-          );
-        }
-      } catch (error) {
-        console.error("Failed to load session history:", error);
+  const handleAgentChange = useCallback(
+    async (agentName) => {
+      if (config) {
+        await saveConfig({ ...config, agent: agentName });
       }
     },
-    [setActiveSessionId],
+    [config, saveConfig],
   );
-
-  const handleNewSession = useCallback(() => {
-    setActiveSessionId(null);
-    setMessages([]);
-    setPlan(null);
-    setOutputs([]);
-  }, [setActiveSessionId]);
 
   return (
     <div className="flex min-h-screen flex-col bg-canvas text-text">
       <div className="flex min-h-0 flex-1 overflow-hidden">
+        {/* Sidebar — Project tree */}
         <Sidebar
           onAddToContext={(path) => setPendingContextPath(path)}
           onOpenFile={(path) => setPreviewPath(path)}
-          outputs={outputs}
-          activeTab={sidebarTab}
-          onTabChange={setSidebarTab}
-          workspace={workspace}
-          agents={agents}
-          activeAgent={activeAgent}
-          onAgentChange={async (agentName) => {
-            if (config) {
-              await saveConfig({ ...config, agent: agentName });
-            }
-          }}
-          scheduled={{
-            tasks: scheduledTasks,
-            onAdd: addTask,
-            onRemove: removeTask,
-            onToggle: toggleTask,
-            createOpen: scheduleCreateOpen,
-            onCreateOpenChange: setScheduleCreateOpen,
-          }}
+          width={sidebarWidth}
+          onResizeStart={startSidebarResize}
         />
+
+        {/* Main chat area */}
         <main className="flex min-w-0 flex-1 flex-col bg-canvas">
-          <header className="border-b border-border px-6 py-4">
-            <SessionSwitcher
-              sessions={sessions}
-              activeSessionId={activeSessionId}
-              onNewSession={handleNewSession}
-              onResumeSession={handleResumeSession}
-            />
-          </header>
           <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-5">
             {messages.length === 0 ? (
               <p className="mt-16 text-center text-sm text-muted">
                 Start a conversation.
               </p>
             ) : null}
-            <PlanPanel plan={plan} />
             {messages.map((message) =>
               message.role === "user" ? (
                 <UserMessage key={message.id} message={message} />
@@ -228,6 +191,8 @@ export default function App() {
             ) : null}
             <div ref={messagesEndRef} />
           </section>
+
+          {/* Composer with agent info */}
           <Composer
             pendingContextPath={pendingContextPath}
             onContextInjected={() => setPendingContextPath(null)}
@@ -236,25 +201,30 @@ export default function App() {
             onUserMessage={(message) =>
               setMessages((previous) => [...previous, message])
             }
-            mode={mode}
-            onModeChange={setMode}
-            skills={skills}
-            onCompact={handleCompact}
-            onOpenSchedule={handleOpenSchedule}
+            agents={agents}
+            activeAgent={activeAgent}
+            onAgentChange={handleAgentChange}
           />
         </main>
+
+        {/* Preview pane — resizable */}
         {previewPath ? (
-          <PreviewPane path={previewPath} onClose={() => setPreviewPath(null)} />
+          <div className="relative flex shrink-0" style={{ width: `${previewWidth}px` }}>
+            <div
+              className="absolute left-0 top-0 h-full w-1 cursor-col-resize hover:bg-accent/30 active:bg-accent/50"
+              onMouseDown={startPreviewResize}
+            />
+            <PreviewPane path={previewPath} onClose={() => setPreviewPath(null)} />
+          </div>
         ) : null}
       </div>
+
+      {/* Minimal status bar — just settings gear */}
       <StatusBar
-        activeAgent={activeAgent}
-        activeProjectName={basename(activeProjectPath)}
-        activeSessionId={activeSessionId}
-        tokenCount={0}
-        contextWindow={config?.context_window ?? undefined}
         onSettingsOpen={() => setSettingsOpen(true)}
       />
+
+      {/* Settings dialog (includes workspace config) */}
       <SettingsPanel
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
