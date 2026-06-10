@@ -1,11 +1,16 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod chat;
 mod config;
 mod discovery;
 mod fs;
 mod gateway;
+mod harness;
+mod harness_claude;
+mod harness_codex;
+mod harness_gemini;
+mod harness_hermes;
+mod harness_pi;
 mod mcp;
 mod projects;
 mod scheduled;
@@ -42,7 +47,8 @@ fn main() {
             mcp::list_mcp_servers,
             mcp::save_mcp_servers,
             discovery::discover_hermes,
-            chat::send_prompt,
+            harness::send_prompt,
+            harness::discover_agents,
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {

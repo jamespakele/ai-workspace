@@ -60,6 +60,7 @@ export default function App() {
         const projectDir = config?.project_dir || undefined;
 
         const result = await invoke("send_prompt", {
+          agent: config?.agent ?? "hermes",
           hermesBin,
           text,
           sessionId: activeSessionId ?? "",
