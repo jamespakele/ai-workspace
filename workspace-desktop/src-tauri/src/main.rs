@@ -44,6 +44,10 @@ fn main() {
             workspace::load_workspace,
             workspace::init_workspace,
             workspace::scope_skill_to_project,
+            workspace::unscope_skill_from_project,
+            workspace::list_global_skills,
+            workspace::list_project_skills,
+            workspace::install_skill_package,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

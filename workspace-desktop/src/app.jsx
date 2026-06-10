@@ -19,6 +19,36 @@ const MIN_PREVIEW_WIDTH = 260;
 const MAX_PREVIEW_WIDTH = 640;
 const DEFAULT_PREVIEW_WIDTH = 380;
 
+/**
+ * Scan agent response text for mentions of globally installed skills.
+ * If a skill name appears, auto-scope it to the project (fire-and-forget).
+ */
+async function autoScopeDetectedSkills(responseText, projectDir) {
+  try {
+    const globalSkills = await invoke("list_global_skills");
+    const projectSkills = await invoke("list_project_skills", { projectDir });
+    const scopedNames = new Set(projectSkills.map((s) => s.name));
+    const lower = responseText.toLowerCase();
+
+    for (const skill of globalSkills) {
+      if (scopedNames.has(skill.name)) {
+        continue;
+      }
+
+      // Check if the skill name appears as a word boundary in the response.
+      if (lower.includes(skill.name.toLowerCase())) {
+        await invoke("scope_skill_to_project", {
+          skillName: skill.name,
+          projectDir,
+        });
+      }
+    }
+  } catch (err) {
+    // Non-critical — don't break chat for a scoping failure.
+    console.warn("Auto-scope skill detection failed:", err);
+  }
+}
+
 export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pendingContextPath, setPendingContextPath] = useState(null);
@@ -121,6 +151,12 @@ export default function App() {
             isStreaming: false,
           },
         ]);
+
+        // Auto-detect: if the response mentions a globally installed skill,
+        // auto-scope it to the project so the agent has it on next prompt.
+        if (config?.active_project && result.response) {
+          autoScopeDetectedSkills(result.response, config.active_project);
+        }
 
         refresh();
       } catch (error) {

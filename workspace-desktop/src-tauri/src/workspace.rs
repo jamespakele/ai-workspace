@@ -129,6 +129,116 @@ pub fn scope_skill_to_project(
     Ok(())
 }
 
+/// Remove a skill symlink from a project.
+#[tauri::command]
+pub fn unscope_skill_from_project(
+    skill_name: String,
+    project_dir: String,
+) -> Result<(), String> {
+    let link_path = project_root(&project_dir).join("skills").join(&skill_name);
+    if link_path.exists() {
+        std::fs::remove_file(&link_path)
+            .or_else(|_| std::fs::remove_dir_all(&link_path))
+            .map_err(|e| format!("Failed to remove skill link: {e}"))?;
+    }
+    Ok(())
+}
+
+/// List all globally installed skills (in ~/.workspace/skills/).
+#[tauri::command]
+pub fn list_global_skills() -> Vec<SkillInfo> {
+    let mut skills = Vec::new();
+    collect_skills(&global_root().join("skills"), &mut skills);
+    skills
+}
+
+/// List skills scoped to a project (symlinks in <project>/.workspace/skills/).
+#[tauri::command]
+pub fn list_project_skills(project_dir: String) -> Vec<SkillInfo> {
+    let mut skills = Vec::new();
+    collect_skills(&project_root(&project_dir).join("skills"), &mut skills);
+    skills
+}
+
+/// Install a packaged skill or plugin from a .skill or .plugin zip file.
+/// .skill files are extracted to ~/.workspace/skills/<package-name>/
+/// .plugin files are extracted to ~/.workspace/plugins/<package-name>/
+#[tauri::command]
+pub fn install_skill_package(file_path: String) -> Result<String, String> {
+    let path = Path::new(&file_path);
+    if !path.exists() {
+        return Err(format!("File not found: {file_path}"));
+    }
+
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+
+    let target_parent = match ext.as_str() {
+        "skill" => global_root().join("skills"),
+        "plugin" => global_root().join("plugins"),
+        _ => return Err("Unsupported file type. Use .skill or .plugin files.".to_string()),
+    };
+
+    std::fs::create_dir_all(&target_parent)
+        .map_err(|e| format!("Failed to create target dir: {e}"))?;
+
+    // Derive the package name from the filename (strip extension).
+    let package_name = path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("unknown")
+        .to_string();
+
+    let target_dir = target_parent.join(&package_name);
+
+    // If already installed, remove first (upgrade).
+    if target_dir.exists() {
+        std::fs::remove_dir_all(&target_dir)
+            .map_err(|e| format!("Failed to remove existing package: {e}"))?;
+    }
+
+    std::fs::create_dir_all(&target_dir)
+        .map_err(|e| format!("Failed to create package dir: {e}"))?;
+
+    // Open the zip and extract.
+    let file = std::fs::File::open(path)
+        .map_err(|e| format!("Failed to open package file: {e}"))?;
+
+    let mut archive = zip::ZipArchive::new(file)
+        .map_err(|e| format!("Failed to read zip archive: {e}"))?;
+
+    for i in 0..archive.len() {
+        let mut entry = archive
+            .by_index(i)
+            .map_err(|e| format!("Failed to read zip entry: {e}"))?;
+
+        let entry_path = entry
+            .enclosed_name()
+            .ok_or_else(|| "Invalid zip entry path".to_string())?;
+
+        let out_path = target_dir.join(entry_path);
+
+        if entry.is_dir() {
+            std::fs::create_dir_all(&out_path)
+                .map_err(|e| format!("Failed to create dir: {e}"))?;
+        } else {
+            if let Some(parent) = out_path.parent() {
+                std::fs::create_dir_all(parent)
+                    .map_err(|e| format!("Failed to create parent dir: {e}"))?;
+            }
+            let mut out_file = std::fs::File::create(&out_path)
+                .map_err(|e| format!("Failed to create file: {e}"))?;
+            std::io::copy(&mut entry, &mut out_file)
+                .map_err(|e| format!("Failed to extract file: {e}"))?;
+        }
+    }
+
+    Ok(format!("Installed {ext} '{package_name}' to {}", target_dir.display()))
+}
+
 /// Build the context string to prepend to every agent prompt.
 /// Format: soul.md content + os.md content, separated by headers.
 pub fn build_context_prefix(ctx: &WorkspaceContext) -> String {

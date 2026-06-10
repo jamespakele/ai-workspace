@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
+import { invoke } from "@tauri-apps/api/core";
 
 import { useAppConfig } from "@/hooks/useAppConfig";
 import { useFileTree } from "@/hooks/useFileTree";
@@ -75,6 +76,57 @@ export function Sidebar({
   const { childrenOf, toggleExpanded, isExpanded, isLoading } = useFileTree(activeProjectPath);
   const [projectMenuOpen, setProjectMenuOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
+  const [skillsOpen, setSkillsOpen] = useState(false);
+  const [globalSkills, setGlobalSkills] = useState([]);
+  const [projectSkills, setProjectSkills] = useState([]);
+
+  const refreshSkills = useCallback(async () => {
+    try {
+      const global = await invoke("list_global_skills");
+      setGlobalSkills(global);
+
+      if (activeProjectPath) {
+        const scoped = await invoke("list_project_skills", {
+          projectDir: activeProjectPath,
+        });
+        setProjectSkills(scoped);
+      } else {
+        setProjectSkills([]);
+      }
+    } catch (err) {
+      console.error("Failed to load skills:", err);
+    }
+  }, [activeProjectPath]);
+
+  useEffect(() => {
+    void refreshSkills();
+  }, [refreshSkills]);
+
+  const isScopedToProject = (skillName) =>
+    projectSkills.some((s) => s.name === skillName);
+
+  const toggleSkillScope = async (skillName) => {
+    if (!activeProjectPath) {
+      return;
+    }
+
+    try {
+      if (isScopedToProject(skillName)) {
+        await invoke("unscope_skill_from_project", {
+          skillName,
+          projectDir: activeProjectPath,
+        });
+      } else {
+        await invoke("scope_skill_to_project", {
+          skillName,
+          projectDir: activeProjectPath,
+        });
+      }
+      await refreshSkills();
+    } catch (err) {
+      console.error("Failed to toggle skill scope:", err);
+    }
+  };
 
   const rootEntries = childrenOf(activeProjectPath);
 
@@ -233,6 +285,57 @@ export function Sidebar({
             </button>
           </div>
         )}
+      </div>
+
+      {/* Skills picker */}
+      <div className="border-t border-border">
+        <button
+          type="button"
+          onClick={() => setSkillsOpen((o) => !o)}
+          className="flex w-full items-center justify-between px-4 py-2.5 text-left transition hover:bg-panel/70"
+        >
+          <span className="font-mono text-xs uppercase tracking-[0.18em] text-muted">
+            Skills ({globalSkills.length})
+          </span>
+          <span className="text-xs text-muted">{skillsOpen ? "▼" : "▶"}</span>
+        </button>
+
+        {skillsOpen ? (
+          <div className="max-h-48 overflow-y-auto pb-2">
+            {globalSkills.length === 0 ? (
+              <p className="px-4 py-2 text-xs text-muted">
+                No skills installed. Install via Settings.
+              </p>
+            ) : (
+              globalSkills.map((skill) => {
+                const active = isScopedToProject(skill.name);
+                return (
+                  <button
+                    key={skill.name}
+                    type="button"
+                    onClick={() => toggleSkillScope(skill.name)}
+                    disabled={!activeProjectPath}
+                    className="flex w-full items-center gap-2 px-4 py-1.5 text-left text-sm transition hover:bg-panel/70 disabled:opacity-40"
+                    title={
+                      activeProjectPath
+                        ? active
+                          ? `Remove ${skill.name} from project`
+                          : `Add ${skill.name} to project`
+                        : "Select a project first"
+                    }
+                  >
+                    <span
+                      className={`h-2 w-2 shrink-0 rounded-full ${
+                        active ? "bg-green-400" : "bg-border"
+                      }`}
+                    />
+                    <span className="min-w-0 truncate text-text">{skill.name}</span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        ) : null}
       </div>
 
       {/* Context menu */}

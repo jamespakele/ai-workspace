@@ -213,12 +213,13 @@ export function SettingsPanel({ open, onClose }) {
     Promise.all([
       listen("tauri://drag-drop", (event) => {
         setIsDragging(false);
-        const skillPath = event.payload.paths?.find((path) =>
-          path.toLowerCase().endsWith(".skill"),
-        );
+        const packagePath = event.payload.paths?.find((path) => {
+          const lower = path.toLowerCase();
+          return lower.endsWith(".skill") || lower.endsWith(".plugin");
+        });
 
-        if (skillPath) {
-          void doImport(skillPath);
+        if (packagePath) {
+          void doImport(packagePath);
         }
       }),
       listen("tauri://drag-enter", () => {
@@ -277,11 +278,11 @@ export function SettingsPanel({ open, onClose }) {
     });
 
     try {
-      const result = await invoke("import_skill", { path });
+      const result = await invoke("install_skill_package", { filePath: path });
       setImportState({
         status: "success",
-        name: result.name,
-        triggerPhrases: result.trigger_phrases ?? [],
+        name: result,
+        triggerPhrases: [],
         error: "",
       });
     } catch (importError) {
@@ -298,7 +299,9 @@ export function SettingsPanel({ open, onClose }) {
     try {
       const selection = await openDialog({
         multiple: false,
-        filters: [{ name: "Skill Files", extensions: ["skill"] }],
+        filters: [
+          { name: "Skill & Plugin Files", extensions: ["skill", "plugin"] },
+        ],
       });
       const path = typeof selection === "string" ? selection : null;
 
@@ -328,10 +331,10 @@ export function SettingsPanel({ open, onClose }) {
           <div className="flex items-start justify-between gap-4">
             <div>
               <Dialog.Title className="text-lg font-semibold text-text">
-                Settings
+                Workspace Settings
               </Dialog.Title>
               <Dialog.Description className="mt-1 text-sm text-muted">
-                Configure the Hermes gateway path, connection, and startup defaults.
+                Configure workspace, skills, plugins, and agent defaults.
               </Dialog.Description>
             </div>
             <Dialog.Close asChild>
@@ -420,7 +423,7 @@ export function SettingsPanel({ open, onClose }) {
             <div>
               <h3 className="text-base font-semibold text-text">Skills</h3>
               <p className="mt-1 text-sm text-muted">
-                Install `.skill` archives from disk or by dragging them onto the app window.
+                Install `.skill` or `.plugin` archives from disk or by dragging them onto the app window.
               </p>
             </div>
 
@@ -431,9 +434,9 @@ export function SettingsPanel({ open, onClose }) {
                   : "border-border bg-canvas"
               }`}
             >
-              <p className="text-sm text-text">Drop a `.skill` file anywhere in the window.</p>
+              <p className="text-sm text-text">Drop a `.skill` or `.plugin` file anywhere in the window.</p>
               <p className="mt-1 text-xs text-muted">
-                Hermes Desktop will extract the skill into `~/.hermes/skills`.
+                Packages are extracted to `~/.workspace/skills/` or `~/.workspace/plugins/`.
               </p>
               <Button
                 type="button"
@@ -441,7 +444,7 @@ export function SettingsPanel({ open, onClose }) {
                 className="mt-4"
                 onClick={() => void handleBrowse()}
               >
-                Browse .skill file
+                Browse .skill / .plugin file
               </Button>
             </div>
 
@@ -450,22 +453,8 @@ export function SettingsPanel({ open, onClose }) {
             ) : null}
 
             {importState.status === "success" ? (
-              <div className="mt-4 rounded-2xl border border-border bg-panel/70 p-4">
-                <p className="font-mono font-semibold text-accent">{importState.name}</p>
-                {importState.triggerPhrases.length > 0 ? (
-                  <ul className="mt-3 list-disc space-y-1 pl-5">
-                    {importState.triggerPhrases.map((phrase) => (
-                      <li key={phrase} className="font-mono text-sm text-text">
-                        {phrase}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-3 text-sm text-muted">(none found)</p>
-                )}
-                <div className="mt-2 rounded-lg border border-yellow-400/30 bg-yellow-400/10 px-3 py-2 text-[13px] text-yellow-400">
-                  ⚠ Restart gateway to activate skill
-                </div>
+              <div className="mt-4 rounded-2xl border border-green-500/30 bg-green-500/10 px-4 py-3">
+                <p className="font-mono text-sm text-green-400">✓ {importState.name}</p>
               </div>
             ) : null}
 
