@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 
 import { Sidebar } from "./components/sidebar";
 import { SettingsPanel } from "./components/settings";
@@ -6,30 +7,13 @@ import { StatusBar } from "./components/statusbar";
 import { UserMessage, AssistantMessage } from "./components/message";
 import { Composer } from "./components/composer";
 import { SessionSwitcher } from "./components/session-switcher";
-import { ApprovalCard } from "./components/approval-card";
 import { ConnectWizard } from "./components/connect-wizard";
 import { PlanPanel } from "./components/plan-panel";
 import { PreviewPane } from "./components/preview-pane";
-import { useHermesGateway } from "./hooks/useHermesGateway";
 import { useSessions } from "./hooks/useSessions";
 import { useSkills } from "./hooks/useSkills";
 import { useScheduledTasks } from "./hooks/useScheduledTasks";
 import { useAppConfig } from "./hooks/useAppConfig";
-import { collectOutputs } from "./lib/outputs";
-
-function updateLastStreamingAssistant(messages, updater) {
-  const next = [...messages];
-
-  for (let index = next.length - 1; index >= 0; index -= 1) {
-    const message = next[index];
-    if (message.role === "assistant" && message.isStreaming) {
-      next[index] = updater(message);
-      return next;
-    }
-  }
-
-  return messages;
-}
 
 export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -38,182 +22,14 @@ export default function App() {
   const [messages, setMessages] = useState([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [mode, setMode] = useState("ask");
-  const [pendingApprovals, setPendingApprovals] = useState([]);
   const [plan, setPlan] = useState(null);
   const [outputs, setOutputs] = useState([]);
   const [previewPath, setPreviewPath] = useState(null);
   const [sidebarTab, setSidebarTab] = useState("files");
   const [scheduleCreateOpen, setScheduleCreateOpen] = useState(false);
   const messagesEndRef = useRef(null);
-  const modeRef = useRef(mode);
-  const sendRef = useRef(null);
-  const sessionAllowedToolsRef = useRef(new Set());
-  // Tool metadata from tool.start, so tool.complete can resolve output paths.
-  const toolCallMetaRef = useRef(new Map());
 
-  modeRef.current = mode;
-
-  const handleChatEvent = useCallback((event) => {
-    switch (event.event) {
-      case "message.delta": {
-        const delta = event.data?.delta ?? "";
-        const messageId = event.data?.message_id ?? crypto.randomUUID();
-
-        setMessages((previous) => {
-          const next = [...previous];
-          const lastMessage = next.at(-1);
-
-          if (lastMessage?.role === "assistant" && lastMessage.isStreaming) {
-            next[next.length - 1] = {
-              ...lastMessage,
-              content: `${lastMessage.content}${delta}`,
-            };
-            return next;
-          }
-
-          return [
-            ...previous,
-            {
-              id: messageId,
-              role: "assistant",
-              content: delta,
-              toolCalls: [],
-              isStreaming: true,
-            },
-          ];
-        });
-        setIsStreaming(true);
-        break;
-      }
-      case "tool.start": {
-        const toolCallId = event.data?.tool_call_id ?? crypto.randomUUID();
-        const toolName = event.data?.tool_name ?? "";
-        const args = event.data?.args ?? {};
-
-        toolCallMetaRef.current.set(toolCallId, { name: toolName, args });
-
-        setMessages((previous) =>
-          updateLastStreamingAssistant(previous, (message) => ({
-            ...message,
-            toolCalls: [
-              ...message.toolCalls,
-              {
-                id: toolCallId,
-                name: toolName,
-                args,
-                partialOutput: "",
-                result: null,
-                status: "running",
-              },
-            ],
-          })),
-        );
-        break;
-      }
-      case "tool.progress": {
-        setMessages((previous) =>
-          updateLastStreamingAssistant(previous, (message) => ({
-            ...message,
-            toolCalls: message.toolCalls.map((toolCall) =>
-              toolCall.id === event.data?.tool_call_id
-                ? {
-                    ...toolCall,
-                    partialOutput: event.data?.output ?? "",
-                  }
-                : toolCall,
-            ),
-          })),
-        );
-        break;
-      }
-      case "tool.complete": {
-        const toolCallId = event.data?.tool_call_id;
-        const meta = toolCallMetaRef.current.get(toolCallId);
-
-        if (meta) {
-          toolCallMetaRef.current.delete(toolCallId);
-          setOutputs((previous) =>
-            collectOutputs(previous, [
-              { name: meta.name, args: meta.args, status: "done" },
-            ]),
-          );
-        }
-
-        setMessages((previous) =>
-          updateLastStreamingAssistant(previous, (message) => ({
-            ...message,
-            toolCalls: message.toolCalls.map((toolCall) =>
-              toolCall.id === event.data?.tool_call_id
-                ? {
-                    ...toolCall,
-                    result: event.data?.result ?? "",
-                    status: "done",
-                  }
-                : toolCall,
-            ),
-          })),
-        );
-        break;
-      }
-      case "message.complete": {
-        setMessages((previous) =>
-          updateLastStreamingAssistant(previous, (message) => ({
-            ...message,
-            isStreaming: false,
-          })),
-        );
-        setIsStreaming(false);
-        break;
-      }
-      case "permission.request": {
-        const request = event.data ?? {};
-
-        // Auto mode and session-allowed tools skip the prompt, mirroring
-        // Cowork's autonomy modes.
-        if (
-          modeRef.current === "auto" ||
-          sessionAllowedToolsRef.current.has(request.tool_name)
-        ) {
-          sendRef.current?.("permission.respond", {
-            request_id: request.request_id,
-            decision: "allow_once",
-          });
-          break;
-        }
-
-        setPendingApprovals((previous) => [...previous, request]);
-        break;
-      }
-      case "plan.update": {
-        setPlan(event.data ?? null);
-        break;
-      }
-      case "session.error":
-        setMessages((previous) => [
-          ...previous,
-          {
-            id: crypto.randomUUID(),
-            role: "error",
-            content: event.data?.message ?? "Gateway error",
-            toolCalls: [],
-            isStreaming: false,
-          },
-        ]);
-        setIsStreaming(false);
-        break;
-      default:
-        break;
-    }
-  }, []);
-  const {
-    status: gatewayStatus,
-    activeModel,
-    tokenCount,
-    send,
-    resetTokenCount,
-    reconnect,
-  } = useHermesGateway({ onChatEvent: handleChatEvent });
-  const { sessions, activeSessionId, setActiveSessionId } = useSessions();
+  const { sessions, activeSessionId, setActiveSessionId, refresh } = useSessions();
   const { skills } = useSkills();
   const { config, saveConfig } = useAppConfig();
   const {
@@ -221,41 +37,74 @@ export default function App() {
     addTask,
     removeTask,
     toggleTask,
-  } = useScheduledTasks({ send });
-
-  sendRef.current = send;
+  } = useScheduledTasks({});
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // A different session means a fresh task surface: per-session approvals,
-  // plan, and outputs no longer apply.
+  // Reset per-session state when switching sessions.
   useEffect(() => {
-    sessionAllowedToolsRef.current = new Set();
-    toolCallMetaRef.current = new Map();
-    setPendingApprovals([]);
     setPlan(null);
     setOutputs([]);
   }, [activeSessionId]);
 
-  const handleApprovalResponse = (request, decision) => {
-    if (decision === "allow_session" && request.tool_name) {
-      sessionAllowedToolsRef.current.add(request.tool_name);
-    }
+  // ── CLI-based chat: invoke("send_prompt") ──────────────────
+  const handleSendPrompt = useCallback(
+    async (text) => {
+      setIsStreaming(true);
 
-    send("permission.respond", {
-      request_id: request.request_id,
-      decision,
-    });
-    setPendingApprovals((previous) =>
-      previous.filter((pending) => pending.request_id !== request.request_id),
-    );
-  };
+      try {
+        const hermesBin =
+          config?.hermes_bin || "/home/pakele/.local/bin/hermes";
+        const projectDir = config?.project_dir || undefined;
+
+        const result = await invoke("send_prompt", {
+          hermesBin,
+          text,
+          sessionId: activeSessionId ?? "",
+          cwd: projectDir ?? null,
+        });
+
+        // Store the session ID from the response for --resume on next message.
+        if (result.session_id) {
+          setActiveSessionId(result.session_id);
+        }
+
+        setMessages((previous) => [
+          ...previous,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: result.response,
+            toolCalls: [],
+            isStreaming: false,
+          },
+        ]);
+
+        // Refresh the session list so the sidebar shows the new/updated session.
+        refresh();
+      } catch (error) {
+        setMessages((previous) => [
+          ...previous,
+          {
+            id: crypto.randomUUID(),
+            role: "error",
+            content: String(error),
+            toolCalls: [],
+            isStreaming: false,
+          },
+        ]);
+      } finally {
+        setIsStreaming(false);
+      }
+    },
+    [activeSessionId, config, refresh, setActiveSessionId],
+  );
 
   const handleCompact = () => {
-    send("session.compact", { session_id: activeSessionId });
-    resetTokenCount();
+    // Compact is handled by the CLI's built-in compression.
+    // No-op in CLI mode — Hermes auto-compresses when needed.
   };
 
   const handleOpenSchedule = () => {
@@ -266,22 +115,54 @@ export default function App() {
   const handleConnectInstance = async (instance) => {
     const next = {
       ...(config ?? {}),
-      gateway_url:
-        instance.gateway_url ?? config?.gateway_url ?? "ws://localhost:8765",
-      // Local installs are spawned by the app; docker/running gateways
-      // manage their own lifecycle.
-      auto_start_gateway: instance.kind === "binary",
       ...(instance.hermes_bin ? { hermes_bin: instance.hermes_bin } : {}),
     };
 
     try {
       await saveConfig(next);
       setConnectOpen(false);
-      reconnect();
     } catch (error) {
       console.error("connect failed:", error);
     }
   };
+
+  // When resuming a session, load its history from the DB.
+  const handleResumeSession = useCallback(
+    async (sessionId) => {
+      setActiveSessionId(sessionId);
+      setMessages([]);
+      setPlan(null);
+      setOutputs([]);
+
+      try {
+        const history = await invoke("get_session_messages", {
+          sessionId,
+        });
+
+        if (Array.isArray(history) && history.length > 0) {
+          setMessages(
+            history.map((message) => ({
+              id: crypto.randomUUID(),
+              role: message.role === "user" ? "user" : "assistant",
+              content: message.content ?? "",
+              toolCalls: [],
+              isStreaming: false,
+            })),
+          );
+        }
+      } catch (error) {
+        console.error("Failed to load session history:", error);
+      }
+    },
+    [setActiveSessionId],
+  );
+
+  const handleNewSession = useCallback(() => {
+    setActiveSessionId(null);
+    setMessages([]);
+    setPlan(null);
+    setOutputs([]);
+  }, [setActiveSessionId]);
 
   return (
     <div className="flex min-h-screen flex-col bg-canvas text-text">
@@ -306,9 +187,8 @@ export default function App() {
             <SessionSwitcher
               sessions={sessions}
               activeSessionId={activeSessionId}
-              setActiveSessionId={setActiveSessionId}
-              send={send}
-              resetTokenCount={resetTokenCount}
+              onNewSession={handleNewSession}
+              onResumeSession={handleResumeSession}
             />
           </header>
           <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-5">
@@ -318,7 +198,7 @@ export default function App() {
               </p>
             ) : null}
             <PlanPanel plan={plan} />
-            {messages.map((message) => (
+            {messages.map((message) =>
               message.role === "user" ? (
                 <UserMessage key={message.id} message={message} />
               ) : message.role === "assistant" ? (
@@ -330,23 +210,21 @@ export default function App() {
                 >
                   {message.content}
                 </article>
-              )
-            ))}
-            {pendingApprovals.map((request) => (
-              <ApprovalCard
-                key={request.request_id}
-                request={request}
-                onRespond={handleApprovalResponse}
-              />
-            ))}
+              ),
+            )}
+            {isStreaming ? (
+              <div className="flex items-center gap-3 px-4 py-3 text-sm text-muted">
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+                Hermes is thinking…
+              </div>
+            ) : null}
             <div ref={messagesEndRef} />
           </section>
           <Composer
             pendingContextPath={pendingContextPath}
             onContextInjected={() => setPendingContextPath(null)}
             isStreaming={isStreaming}
-            send={send}
-            activeSessionId={activeSessionId}
+            onSendPrompt={handleSendPrompt}
             onUserMessage={(message) =>
               setMessages((previous) => [...previous, message])
             }
@@ -362,10 +240,10 @@ export default function App() {
         ) : null}
       </div>
       <StatusBar
-        gatewayStatus={gatewayStatus}
-        activeModel={activeModel}
+        gatewayStatus="cli"
+        activeModel={null}
         activeSessionId={activeSessionId}
-        tokenCount={tokenCount}
+        tokenCount={0}
         contextWindow={config?.context_window ?? undefined}
         onSettingsOpen={() => setSettingsOpen(true)}
         onConnectOpen={() => setConnectOpen(true)}

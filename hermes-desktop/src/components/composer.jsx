@@ -8,8 +8,7 @@ export function Composer({
   pendingContextPath,
   onContextInjected,
   isStreaming,
-  send,
-  activeSessionId,
+  onSendPrompt,
   onUserMessage,
   mode,
   onModeChange,
@@ -55,7 +54,7 @@ export function Composer({
 
   const handleSend = () => {
     const trimmed = text.trim();
-    if (!trimmed) {
+    if (!trimmed || isStreaming) {
       return;
     }
 
@@ -63,21 +62,6 @@ export function Composer({
     if (builtin && runBuiltin(builtin[1])) {
       setText("");
       return;
-    }
-
-    if (isStreaming) {
-      // Cowork-style steering: corrections reach the agent mid-task without
-      // stopping the running action.
-      send("prompt.steer", {
-        text: trimmed,
-        session_id: activeSessionId,
-      });
-    } else {
-      send("prompt.submit", {
-        text: trimmed,
-        session_id: activeSessionId,
-        mode,
-      });
     }
 
     onUserMessage({
@@ -88,10 +72,7 @@ export function Composer({
       isStreaming: false,
     });
     setText("");
-  };
-
-  const handleStop = () => {
-    send("prompt.cancel", { session_id: activeSessionId });
+    onSendPrompt(trimmed);
   };
 
   return (
@@ -127,10 +108,11 @@ export function Composer({
           </ul>
         ) : null}
         <textarea
-          className="mt-3 h-28 w-full resize-none rounded-xl border border-border bg-canvas px-3 py-3 text-sm text-text outline-none placeholder:text-muted"
+          className="mt-3 h-28 w-full resize-none rounded-xl border border-border bg-canvas px-3 py-3 text-sm text-text outline-none placeholder:text-muted disabled:opacity-50"
           placeholder={
-            isStreaming ? "Steer Hermes mid-task…" : "Message Hermes… ( / for commands)"
+            isStreaming ? "Hermes is thinking…" : "Message Hermes… ( / for commands)"
           }
+          disabled={isStreaming}
           value={text}
           onChange={(event) => setText(event.target.value)}
           onKeyDown={(event) => {
@@ -141,20 +123,12 @@ export function Composer({
           }}
         />
         <div className="mt-4 flex items-center justify-end gap-3">
-          {isStreaming ? (
-            <Button
-              className="border border-red-500/40 bg-transparent text-red-400 hover:bg-red-500/10"
-              onClick={handleStop}
-            >
-              Stop
-            </Button>
-          ) : null}
           <Button
             className="bg-accent text-white hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={!text.trim()}
+            disabled={!text.trim() || isStreaming}
             onClick={handleSend}
           >
-            {isStreaming ? "Steer" : "Send"}
+            {isStreaming ? "Thinking…" : "Send"}
           </Button>
         </div>
       </div>

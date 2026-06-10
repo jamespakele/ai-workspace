@@ -34,9 +34,8 @@ function getSessionLabel(session, length) {
 export function SessionSwitcher({
   sessions,
   activeSessionId,
-  setActiveSessionId,
-  send,
-  resetTokenCount,
+  onNewSession,
+  onResumeSession,
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -53,16 +52,12 @@ export function SessionSwitcher({
     : sessions;
 
   const handleNewSession = () => {
-    send("session.create", {});
-    setActiveSessionId(null);
-    resetTokenCount();
+    onNewSession();
     setOpen(false);
   };
 
   const handleResumeSession = (sessionId) => {
-    send("session.resume", { session_id: sessionId });
-    setActiveSessionId(sessionId);
-    resetTokenCount();
+    onResumeSession(sessionId);
     setOpen(false);
   };
 
@@ -133,7 +128,7 @@ export function SessionSwitcher({
               <div className="px-4 py-6 text-sm text-muted">No recent Hermes sessions found.</div>
             ) : visibleSessions.length === 0 ? (
               <div className="px-4 py-6 text-sm text-muted">
-                No sessions match “{search.trim()}”.
+                No sessions match &ldquo;{search.trim()}&rdquo;.
               </div>
             ) : null}
           </div>
