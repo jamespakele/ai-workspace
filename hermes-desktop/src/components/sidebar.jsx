@@ -4,6 +4,14 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { useAppConfig } from "@/hooks/useAppConfig";
 import { useFileTree } from "@/hooks/useFileTree";
 import { useProjects } from "@/hooks/useProjects";
+import { OutputsPanel } from "./outputs-panel";
+import { ScheduledPanel } from "./scheduled-panel";
+
+const TABS = [
+  { id: "files", label: "Files" },
+  { id: "scheduled", label: "Scheduled" },
+  { id: "outputs", label: "Outputs" },
+];
 
 function basename(path) {
   if (!path) {
@@ -30,6 +38,7 @@ function FileTreeNode({
   isExpanded,
   isLoading,
   openContextMenu,
+  onOpenFile,
 }) {
   const expanded = isExpanded(entry.path);
   const loading = isLoading(entry.path);
@@ -39,7 +48,9 @@ function FileTreeNode({
     <div>
       <button
         type="button"
-        onClick={() => entry.is_dir && toggleExpanded(entry.path)}
+        onClick={() =>
+          entry.is_dir ? toggleExpanded(entry.path) : onOpenFile?.(entry.path)
+        }
         onContextMenu={(event) => openContextMenu(event, entry)}
         className="flex w-full items-center gap-2 rounded-lg py-1 pr-2 text-left transition hover:bg-panel/70"
         style={{ paddingLeft: `${depth * 12 + 12}px` }}
@@ -59,6 +70,7 @@ function FileTreeNode({
               isExpanded={isExpanded}
               isLoading={isLoading}
               openContextMenu={openContextMenu}
+              onOpenFile={onOpenFile}
             />
           ))
         : null}
@@ -66,7 +78,14 @@ function FileTreeNode({
   );
 }
 
-export function Sidebar({ onAddToContext }) {
+export function Sidebar({
+  onAddToContext,
+  onOpenFile,
+  outputs = [],
+  scheduled,
+  activeTab,
+  onTabChange,
+}) {
   const { config, saveConfig } = useAppConfig();
   const { projects, addProject } = useProjects();
   const activeProjectPath = config?.active_project ?? "";
@@ -216,27 +235,63 @@ export function Sidebar({ onAddToContext }) {
       </section>
 
       <section className="flex min-h-0 flex-1 flex-col">
-        <div className="border-b border-border px-4 py-3">
-          <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted">File Tree</p>
+        <div className="flex border-b border-border" role="tablist" aria-label="Sidebar sections">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              onClick={() => onTabChange(tab.id)}
+              className={`flex-1 px-2 py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] transition ${
+                activeTab === tab.id
+                  ? "border-b-2 border-accent text-text"
+                  : "text-muted hover:text-text"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
-        <div className="flex-1 overflow-y-auto py-3">
-          {activeProjectPath ? (
-            rootEntries.map((entry) => (
-              <FileTreeNode
-                key={entry.path}
-                entry={entry}
-                depth={0}
-                childrenOf={childrenOf}
-                toggleExpanded={toggleExpanded}
-                isExpanded={isExpanded}
-                isLoading={isLoading}
-                openContextMenu={openContextMenu}
-              />
-            ))
-          ) : (
-            <div className="px-4 text-sm text-muted">No project selected.</div>
-          )}
-        </div>
+
+        {activeTab === "files" ? (
+          <div className="flex-1 overflow-y-auto py-3">
+            {activeProjectPath ? (
+              rootEntries.map((entry) => (
+                <FileTreeNode
+                  key={entry.path}
+                  entry={entry}
+                  depth={0}
+                  childrenOf={childrenOf}
+                  toggleExpanded={toggleExpanded}
+                  isExpanded={isExpanded}
+                  isLoading={isLoading}
+                  openContextMenu={openContextMenu}
+                  onOpenFile={onOpenFile}
+                />
+              ))
+            ) : (
+              <div className="px-4 text-sm text-muted">No project selected.</div>
+            )}
+          </div>
+        ) : null}
+
+        {activeTab === "scheduled" && scheduled ? (
+          <ScheduledPanel
+            tasks={scheduled.tasks}
+            onAdd={scheduled.onAdd}
+            onRemove={scheduled.onRemove}
+            onToggle={scheduled.onToggle}
+            createOpen={scheduled.createOpen}
+            onCreateOpenChange={scheduled.onCreateOpenChange}
+          />
+        ) : null}
+
+        {activeTab === "outputs" ? (
+          <div className="flex-1 overflow-y-auto">
+            <OutputsPanel outputs={outputs} onOpen={(path) => onOpenFile?.(path)} />
+          </div>
+        ) : null}
       </section>
 
       {contextMenu ? (

@@ -10,6 +10,8 @@ const CHAT_EVENTS = new Set([
   "tool.complete",
   "message.complete",
   "session.error",
+  "permission.request",
+  "plan.update",
 ]);
 
 function parseMessage(data) {
@@ -33,6 +35,9 @@ export function useHermesGateway({ onChatEvent } = {}) {
   const [status, setStatus] = useState("connecting");
   const [activeModel, setActiveModel] = useState(null);
   const [tokenCount, setTokenCount] = useState(0);
+  // Bumped by reconnect() to tear down the socket and re-read the config,
+  // e.g. after the connect wizard switches instances.
+  const [generation, setGeneration] = useState(0);
   const socketRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const isUnmountedRef = useRef(false);
@@ -217,6 +222,8 @@ export function useHermesGateway({ onChatEvent } = {}) {
     };
 
     isUnmountedRef.current = false;
+    reconnectAttemptRef.current = 0;
+    hasReachedCeilingRef.current = false;
     setTokenCount(0);
     void initialize();
 
@@ -226,7 +233,7 @@ export function useHermesGateway({ onChatEvent } = {}) {
       clearReconnectTimeout();
       cleanupSocket();
     };
-  }, []);
+  }, [generation]);
 
   const send = (method, params = {}) => {
     const socket = socketRef.current;
@@ -239,11 +246,17 @@ export function useHermesGateway({ onChatEvent } = {}) {
 
   const resetTokenCount = useCallback(() => setTokenCount(0), []);
 
+  const reconnect = useCallback(
+    () => setGeneration((current) => current + 1),
+    [],
+  );
+
   return {
     status,
     send,
     activeModel,
     tokenCount,
     resetTokenCount,
+    reconnect,
   };
 }

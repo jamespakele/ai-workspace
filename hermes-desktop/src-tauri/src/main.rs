@@ -2,9 +2,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod config;
+mod discovery;
 mod fs;
 mod gateway;
+mod mcp;
 mod projects;
+mod scheduled;
 mod sessions;
 mod skills;
 
@@ -27,9 +30,16 @@ fn main() {
             projects::list_projects,
             projects::add_project,
             fs::read_dir,
+            fs::read_file,
             gateway::spawn_gateway,
             gateway::kill_gateway,
             skills::import_skill,
+            skills::list_skills,
+            scheduled::list_scheduled_tasks,
+            scheduled::save_scheduled_tasks,
+            mcp::list_mcp_servers,
+            mcp::save_mcp_servers,
+            discovery::discover_hermes,
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {

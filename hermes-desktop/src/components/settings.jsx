@@ -6,6 +6,172 @@ import { Dialog } from "radix-ui";
 
 import { Button } from "@/components/ui/button";
 import { useAppConfig } from "@/hooks/useAppConfig";
+import { useMcpServers } from "@/hooks/useMcpServers";
+
+const EMPTY_CONNECTOR_FORM = {
+  name: "",
+  transport: "stdio",
+  command: "",
+  url: "",
+};
+
+function ConnectorsSection() {
+  const { servers, error, addServer, removeServer, toggleServer } =
+    useMcpServers();
+  const [form, setForm] = useState(EMPTY_CONNECTOR_FORM);
+  const [formOpen, setFormOpen] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleAdd = async () => {
+    const added = await addServer({
+      name: form.name.trim(),
+      transport: form.transport,
+      command: form.command.trim(),
+      url: form.url.trim(),
+      enabled: true,
+    });
+
+    if (added) {
+      setForm(EMPTY_CONNECTOR_FORM);
+      setFormOpen(false);
+      setSaved(true);
+    }
+  };
+
+  const mutate = async (action) => {
+    const changed = await action();
+    if (changed) {
+      setSaved(true);
+    }
+  };
+
+  return (
+    <section className="mt-6 border-t border-border pt-6">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-base font-semibold text-text">Connectors</h3>
+          <p className="mt-1 text-sm text-muted">
+            MCP servers Hermes can reach (stored in ~/.hermes/mcp.json).
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setFormOpen((current) => !current)}
+        >
+          {formOpen ? "Cancel" : "Add connector"}
+        </Button>
+      </div>
+
+      {formOpen ? (
+        <div className="mt-4 space-y-2 rounded-2xl border border-border bg-canvas p-4">
+          <input
+            type="text"
+            placeholder="Name (e.g. slack)"
+            aria-label="Connector name"
+            value={form.name}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, name: event.target.value }))
+            }
+            className="w-full rounded-xl border border-border bg-panel px-3 py-2 text-sm text-text outline-none focus:border-accent"
+          />
+          <select
+            aria-label="Connector transport"
+            value={form.transport}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                transport: event.target.value,
+              }))
+            }
+            className="w-full rounded-xl border border-border bg-panel px-3 py-2 text-sm text-text outline-none focus:border-accent"
+          >
+            <option value="stdio">stdio</option>
+            <option value="http">http</option>
+          </select>
+          {form.transport === "stdio" ? (
+            <input
+              type="text"
+              placeholder="Command (e.g. npx slack-mcp)"
+              aria-label="Connector command"
+              value={form.command}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  command: event.target.value,
+                }))
+              }
+              className="w-full rounded-xl border border-border bg-panel px-3 py-2 text-sm text-text outline-none focus:border-accent"
+            />
+          ) : (
+            <input
+              type="text"
+              placeholder="URL (https://…)"
+              aria-label="Connector URL"
+              value={form.url}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, url: event.target.value }))
+              }
+              className="w-full rounded-xl border border-border bg-panel px-3 py-2 text-sm text-text outline-none focus:border-accent"
+            />
+          )}
+          <Button type="button" className="w-full" onClick={() => void handleAdd()}>
+            Save connector
+          </Button>
+        </div>
+      ) : null}
+
+      {error ? <p className="mt-3 text-sm text-red-400">{error}</p> : null}
+
+      <ul className="mt-4 space-y-2">
+        {servers.map((server) => (
+          <li
+            key={server.name}
+            className="flex items-center justify-between gap-3 rounded-xl border border-border bg-canvas px-3 py-2"
+          >
+            <div className="min-w-0">
+              <p
+                className={`truncate text-sm font-medium ${server.enabled ? "text-text" : "text-muted line-through"}`}
+              >
+                {server.name}
+              </p>
+              <p className="truncate font-mono text-xs text-muted">
+                {server.transport === "http" ? server.url : server.command}
+              </p>
+            </div>
+            <div className="flex shrink-0 gap-1">
+              <button
+                type="button"
+                onClick={() => void mutate(() => toggleServer(server.name))}
+                aria-label={`${server.enabled ? "Disable" : "Enable"} ${server.name}`}
+                className="rounded-md px-2 py-1 text-xs text-muted transition hover:bg-panel hover:text-text"
+              >
+                {server.enabled ? "On" : "Off"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void mutate(() => removeServer(server.name))}
+                aria-label={`Remove ${server.name}`}
+                className="rounded-md px-2 py-1 text-xs text-muted transition hover:bg-red-500/10 hover:text-red-400"
+              >
+                ✕
+              </button>
+            </div>
+          </li>
+        ))}
+        {servers.length === 0 ? (
+          <li className="text-sm text-muted">No connectors configured.</li>
+        ) : null}
+      </ul>
+
+      {saved ? (
+        <div className="mt-3 rounded-lg border border-yellow-400/30 bg-yellow-400/10 px-3 py-2 text-[13px] text-yellow-400">
+          ⚠ Restart gateway to apply connector changes
+        </div>
+      ) : null}
+    </section>
+  );
+}
 
 const EMPTY_CONFIG = {
   hermes_bin: "",
@@ -158,7 +324,7 @@ export function SettingsPanel({ open, onClose }) {
     <Dialog.Root open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/70 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-panel p-6 shadow-2xl outline-none">
+        <Dialog.Content className="fixed left-1/2 top-1/2 max-h-[calc(100vh-4rem)] w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-border bg-panel p-6 shadow-2xl outline-none">
           <div className="flex items-start justify-between gap-4">
             <div>
               <Dialog.Title className="text-lg font-semibold text-text">
@@ -309,6 +475,8 @@ export function SettingsPanel({ open, onClose }) {
               </div>
             ) : null}
           </section>
+
+          <ConnectorsSection />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

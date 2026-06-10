@@ -6,8 +6,16 @@ import { StatusBar } from "./components/statusbar";
 import { UserMessage, AssistantMessage } from "./components/message";
 import { Composer } from "./components/composer";
 import { SessionSwitcher } from "./components/session-switcher";
+import { ApprovalCard } from "./components/approval-card";
+import { ConnectWizard } from "./components/connect-wizard";
+import { PlanPanel } from "./components/plan-panel";
+import { PreviewPane } from "./components/preview-pane";
 import { useHermesGateway } from "./hooks/useHermesGateway";
 import { useSessions } from "./hooks/useSessions";
+import { useSkills } from "./hooks/useSkills";
+import { useScheduledTasks } from "./hooks/useScheduledTasks";
+import { useAppConfig } from "./hooks/useAppConfig";
+import { collectOutputs } from "./lib/outputs";
 
 function updateLastStreamingAssistant(messages, updater) {
   const next = [...messages];
@@ -25,10 +33,26 @@ function updateLastStreamingAssistant(messages, updater) {
 
 export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [connectOpen, setConnectOpen] = useState(false);
   const [pendingContextPath, setPendingContextPath] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [mode, setMode] = useState("ask");
+  const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [plan, setPlan] = useState(null);
+  const [outputs, setOutputs] = useState([]);
+  const [previewPath, setPreviewPath] = useState(null);
+  const [sidebarTab, setSidebarTab] = useState("files");
+  const [scheduleCreateOpen, setScheduleCreateOpen] = useState(false);
   const messagesEndRef = useRef(null);
+  const modeRef = useRef(mode);
+  const sendRef = useRef(null);
+  const sessionAllowedToolsRef = useRef(new Set());
+  // Tool metadata from tool.start, so tool.complete can resolve output paths.
+  const toolCallMetaRef = useRef(new Map());
+
+  modeRef.current = mode;
+
   const handleChatEvent = useCallback((event) => {
     switch (event.event) {
       case "message.delta": {
@@ -62,15 +86,21 @@ export default function App() {
         break;
       }
       case "tool.start": {
+        const toolCallId = event.data?.tool_call_id ?? crypto.randomUUID();
+        const toolName = event.data?.tool_name ?? "";
+        const args = event.data?.args ?? {};
+
+        toolCallMetaRef.current.set(toolCallId, { name: toolName, args });
+
         setMessages((previous) =>
           updateLastStreamingAssistant(previous, (message) => ({
             ...message,
             toolCalls: [
               ...message.toolCalls,
               {
-                id: event.data?.tool_call_id ?? crypto.randomUUID(),
-                name: event.data?.tool_name ?? "",
-                args: event.data?.args ?? {},
+                id: toolCallId,
+                name: toolName,
+                args,
                 partialOutput: "",
                 result: null,
                 status: "running",
@@ -97,6 +127,18 @@ export default function App() {
         break;
       }
       case "tool.complete": {
+        const toolCallId = event.data?.tool_call_id;
+        const meta = toolCallMetaRef.current.get(toolCallId);
+
+        if (meta) {
+          toolCallMetaRef.current.delete(toolCallId);
+          setOutputs((previous) =>
+            collectOutputs(previous, [
+              { name: meta.name, args: meta.args, status: "done" },
+            ]),
+          );
+        }
+
         setMessages((previous) =>
           updateLastStreamingAssistant(previous, (message) => ({
             ...message,
@@ -123,6 +165,29 @@ export default function App() {
         setIsStreaming(false);
         break;
       }
+      case "permission.request": {
+        const request = event.data ?? {};
+
+        // Auto mode and session-allowed tools skip the prompt, mirroring
+        // Cowork's autonomy modes.
+        if (
+          modeRef.current === "auto" ||
+          sessionAllowedToolsRef.current.has(request.tool_name)
+        ) {
+          sendRef.current?.("permission.respond", {
+            request_id: request.request_id,
+            decision: "allow_once",
+          });
+          break;
+        }
+
+        setPendingApprovals((previous) => [...previous, request]);
+        break;
+      }
+      case "plan.update": {
+        setPlan(event.data ?? null);
+        break;
+      }
       case "session.error":
         setMessages((previous) => [
           ...previous,
@@ -146,17 +211,96 @@ export default function App() {
     tokenCount,
     send,
     resetTokenCount,
+    reconnect,
   } = useHermesGateway({ onChatEvent: handleChatEvent });
   const { sessions, activeSessionId, setActiveSessionId } = useSessions();
+  const { skills } = useSkills();
+  const { config, saveConfig } = useAppConfig();
+  const {
+    tasks: scheduledTasks,
+    addTask,
+    removeTask,
+    toggleTask,
+  } = useScheduledTasks({ send });
+
+  sendRef.current = send;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // A different session means a fresh task surface: per-session approvals,
+  // plan, and outputs no longer apply.
+  useEffect(() => {
+    sessionAllowedToolsRef.current = new Set();
+    toolCallMetaRef.current = new Map();
+    setPendingApprovals([]);
+    setPlan(null);
+    setOutputs([]);
+  }, [activeSessionId]);
+
+  const handleApprovalResponse = (request, decision) => {
+    if (decision === "allow_session" && request.tool_name) {
+      sessionAllowedToolsRef.current.add(request.tool_name);
+    }
+
+    send("permission.respond", {
+      request_id: request.request_id,
+      decision,
+    });
+    setPendingApprovals((previous) =>
+      previous.filter((pending) => pending.request_id !== request.request_id),
+    );
+  };
+
+  const handleCompact = () => {
+    send("session.compact", { session_id: activeSessionId });
+    resetTokenCount();
+  };
+
+  const handleOpenSchedule = () => {
+    setSidebarTab("scheduled");
+    setScheduleCreateOpen(true);
+  };
+
+  const handleConnectInstance = async (instance) => {
+    const next = {
+      ...(config ?? {}),
+      gateway_url:
+        instance.gateway_url ?? config?.gateway_url ?? "ws://localhost:8765",
+      // Local installs are spawned by the app; docker/running gateways
+      // manage their own lifecycle.
+      auto_start_gateway: instance.kind === "binary",
+      ...(instance.hermes_bin ? { hermes_bin: instance.hermes_bin } : {}),
+    };
+
+    try {
+      await saveConfig(next);
+      setConnectOpen(false);
+      reconnect();
+    } catch (error) {
+      console.error("connect failed:", error);
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-canvas text-text">
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <Sidebar onAddToContext={(path) => setPendingContextPath(path)} />
+        <Sidebar
+          onAddToContext={(path) => setPendingContextPath(path)}
+          onOpenFile={(path) => setPreviewPath(path)}
+          outputs={outputs}
+          activeTab={sidebarTab}
+          onTabChange={setSidebarTab}
+          scheduled={{
+            tasks: scheduledTasks,
+            onAdd: addTask,
+            onRemove: removeTask,
+            onToggle: toggleTask,
+            createOpen: scheduleCreateOpen,
+            onCreateOpenChange: setScheduleCreateOpen,
+          }}
+        />
         <main className="flex min-w-0 flex-1 flex-col bg-canvas">
           <header className="border-b border-border px-6 py-4">
             <SessionSwitcher
@@ -173,6 +317,7 @@ export default function App() {
                 Start a conversation.
               </p>
             ) : null}
+            <PlanPanel plan={plan} />
             {messages.map((message) => (
               message.role === "user" ? (
                 <UserMessage key={message.id} message={message} />
@@ -187,6 +332,13 @@ export default function App() {
                 </article>
               )
             ))}
+            {pendingApprovals.map((request) => (
+              <ApprovalCard
+                key={request.request_id}
+                request={request}
+                onRespond={handleApprovalResponse}
+              />
+            ))}
             <div ref={messagesEndRef} />
           </section>
           <Composer
@@ -198,19 +350,34 @@ export default function App() {
             onUserMessage={(message) =>
               setMessages((previous) => [...previous, message])
             }
+            mode={mode}
+            onModeChange={setMode}
+            skills={skills}
+            onCompact={handleCompact}
+            onOpenSchedule={handleOpenSchedule}
           />
         </main>
+        {previewPath ? (
+          <PreviewPane path={previewPath} onClose={() => setPreviewPath(null)} />
+        ) : null}
       </div>
       <StatusBar
         gatewayStatus={gatewayStatus}
         activeModel={activeModel}
         activeSessionId={activeSessionId}
         tokenCount={tokenCount}
+        contextWindow={config?.context_window ?? undefined}
         onSettingsOpen={() => setSettingsOpen(true)}
+        onConnectOpen={() => setConnectOpen(true)}
       />
       <SettingsPanel
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
+      />
+      <ConnectWizard
+        open={connectOpen}
+        onClose={() => setConnectOpen(false)}
+        onConnect={handleConnectInstance}
       />
     </div>
   );
