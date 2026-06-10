@@ -251,6 +251,50 @@ describe("App integration", () => {
     expect(screen.getByLabelText("Task name")).toBeInTheDocument();
   });
 
+  it("connects to a discovered instance via the connect wizard", async () => {
+    let storedConfig = {
+      gateway_url: "ws://localhost:8765",
+      auto_start_gateway: false,
+      active_project: "",
+      context_window: null,
+    };
+    mockCommand("get_config", () => storedConfig);
+    mockCommand("save_config", ({ config }) => {
+      storedConfig = config;
+    });
+    mockCommand("discover_hermes", [
+      {
+        id: "docker:abc123",
+        kind: "docker",
+        label: "Docker: hermes-test (hermes:dev)",
+        hermes_bin: null,
+        gateway_url: "ws://localhost:32768",
+        reachable: true,
+      },
+    ]);
+
+    await renderApp();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Connect to Hermes" }),
+    );
+    await userEvent.click(
+      await screen.findByRole("radio", { name: /hermes-test/ }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Connect" }));
+
+    await waitFor(() =>
+      expect(storedConfig).toMatchObject({
+        gateway_url: "ws://localhost:32768",
+        auto_start_gateway: false,
+      }),
+    );
+
+    // The gateway hook reconnects against the newly saved URL.
+    await waitFor(() => expect(FakeWebSocket.instances.length).toBeGreaterThan(1));
+    expect(FakeWebSocket.instances.at(-1).url).toBe("ws://localhost:32768");
+  });
+
   it("sends session.compact for /compact", async () => {
     const socket = await renderApp();
 

@@ -117,6 +117,24 @@ conventions (`message.delta`, `tool.start`, `prompt.submit`, …): new events
       (case-insensitive); empty-result state.
 - Tests: filter narrows list; clearing restores; no-match message.
 
+## G11 — Connect wizard (instance discovery)
+
+- [x] `hermes-core::discovery`: usual install locations, `which -a` parsing,
+      `docker ps --format '{{json .}}'` parsing (hermes-named containers,
+      published-port extraction preferring container port 8765), dedupe.
+- [x] Rust `discover_hermes` command: PATH + conventional folders + running
+      Docker containers + TCP probe (300 ms) of candidate gateway ports;
+      returns unified instance list (`binary` / `docker` / `running`).
+- [x] `ConnectWizard` dialog opened from a "connect" button in the status
+      bar: scans on open, lists all instances with kind badge and
+      reachability dot, preselects the reachable one, Rescan, Connect.
+- [x] Connecting saves config (gateway URL, binary path, auto-start for
+      local installs only) and live-reconnects the gateway socket
+      (`useHermesGateway.reconnect()`).
+- Tests: which/docker parsing incl. remapped + unpublished ports (Rust);
+  wizard list/preselect/connect/empty/error/rescan; reconnect picks up the
+  new URL; full app flow from button click to new socket.
+
 ## Loop protocol
 
 For each task: write tests first where practical → implement → run

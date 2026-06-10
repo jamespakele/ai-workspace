@@ -22,6 +22,7 @@ export function StatusBar({
   tokenCount,
   contextWindow,
   onSettingsOpen,
+  onConnectOpen,
 }) {
   const usage = computeContextUsage(tokenCount, contextWindow);
 
@@ -34,6 +35,14 @@ export function StatusBar({
           />
           gateway {gatewayStatus}
         </span>
+        <button
+          type="button"
+          onClick={onConnectOpen}
+          aria-label="Connect to Hermes"
+          className="rounded-md border border-border px-2 py-0.5 text-muted transition hover:border-accent/40 hover:text-text"
+        >
+          connect
+        </button>
         <span>model: {activeModel ?? "—"}</span>
       </div>
       <div className="flex items-center gap-3">

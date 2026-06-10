@@ -7,6 +7,7 @@ import { UserMessage, AssistantMessage } from "./components/message";
 import { Composer } from "./components/composer";
 import { SessionSwitcher } from "./components/session-switcher";
 import { ApprovalCard } from "./components/approval-card";
+import { ConnectWizard } from "./components/connect-wizard";
 import { PlanPanel } from "./components/plan-panel";
 import { PreviewPane } from "./components/preview-pane";
 import { useHermesGateway } from "./hooks/useHermesGateway";
@@ -32,6 +33,7 @@ function updateLastStreamingAssistant(messages, updater) {
 
 export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [connectOpen, setConnectOpen] = useState(false);
   const [pendingContextPath, setPendingContextPath] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -209,10 +211,11 @@ export default function App() {
     tokenCount,
     send,
     resetTokenCount,
+    reconnect,
   } = useHermesGateway({ onChatEvent: handleChatEvent });
   const { sessions, activeSessionId, setActiveSessionId } = useSessions();
   const { skills } = useSkills();
-  const { config } = useAppConfig();
+  const { config, saveConfig } = useAppConfig();
   const {
     tasks: scheduledTasks,
     addTask,
@@ -258,6 +261,26 @@ export default function App() {
   const handleOpenSchedule = () => {
     setSidebarTab("scheduled");
     setScheduleCreateOpen(true);
+  };
+
+  const handleConnectInstance = async (instance) => {
+    const next = {
+      ...(config ?? {}),
+      gateway_url:
+        instance.gateway_url ?? config?.gateway_url ?? "ws://localhost:8765",
+      // Local installs are spawned by the app; docker/running gateways
+      // manage their own lifecycle.
+      auto_start_gateway: instance.kind === "binary",
+      ...(instance.hermes_bin ? { hermes_bin: instance.hermes_bin } : {}),
+    };
+
+    try {
+      await saveConfig(next);
+      setConnectOpen(false);
+      reconnect();
+    } catch (error) {
+      console.error("connect failed:", error);
+    }
   };
 
   return (
@@ -345,10 +368,16 @@ export default function App() {
         tokenCount={tokenCount}
         contextWindow={config?.context_window ?? undefined}
         onSettingsOpen={() => setSettingsOpen(true)}
+        onConnectOpen={() => setConnectOpen(true)}
       />
       <SettingsPanel
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
+      />
+      <ConnectWizard
+        open={connectOpen}
+        onClose={() => setConnectOpen(false)}
+        onConnect={handleConnectInstance}
       />
     </div>
   );

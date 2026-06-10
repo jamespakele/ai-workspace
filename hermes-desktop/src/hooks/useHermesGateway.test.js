@@ -114,6 +114,26 @@ describe("useHermesGateway", () => {
     await waitFor(() => expect(hook.result.current.tokenCount).toBe(1500));
   });
 
+  it("reconnect re-reads config and opens a socket to the new gateway", async () => {
+    const { hook } = await connectedHook();
+
+    mockCommand("get_config", {
+      gateway_url: "ws://localhost:32768",
+      auto_start_gateway: false,
+    });
+
+    act(() => {
+      hook.result.current.reconnect();
+    });
+
+    await waitFor(() => expect(FakeWebSocket.instances).toHaveLength(2));
+    const newSocket = FakeWebSocket.instances[1];
+    expect(newSocket.url).toBe("ws://localhost:32768");
+
+    act(() => newSocket.open());
+    await waitFor(() => expect(hook.result.current.status).toBe("connected"));
+  });
+
   it("send writes JSON-RPC frames to the socket", async () => {
     const { hook, socket } = await connectedHook();
 

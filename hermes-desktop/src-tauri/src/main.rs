@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod config;
+mod discovery;
 mod fs;
 mod gateway;
 mod mcp;
@@ -38,6 +39,7 @@ fn main() {
             scheduled::save_scheduled_tasks,
             mcp::list_mcp_servers,
             mcp::save_mcp_servers,
+            discovery::discover_hermes,
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {
