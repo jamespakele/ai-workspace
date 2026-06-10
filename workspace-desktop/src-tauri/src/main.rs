@@ -108,6 +108,11 @@ fn list_models() -> Vec<String> {
 }
 
 #[tauri::command]
+fn get_default_model() -> Option<String> {
+    harness::get_default_model()
+}
+
+#[tauri::command]
 fn load_workspace(project_dir: Option<String>) -> workspace::WorkspaceContext {
     workspace::load_workspace(project_dir)
 }
@@ -179,6 +184,7 @@ fn main() {
             send_prompt,
             discover_agents,
             list_models,
+            get_default_model,
             load_workspace,
             init_workspace,
             scope_skill_to_project,

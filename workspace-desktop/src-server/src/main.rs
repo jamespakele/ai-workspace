@@ -83,6 +83,10 @@ async fn handle_list_models() -> impl IntoResponse {
     Json(workspace_core::harness::list_models())
 }
 
+async fn handle_get_default_model() -> impl IntoResponse {
+    Json(workspace_core::harness::get_default_model())
+}
+
 async fn handle_discover_hermes() -> Result<impl IntoResponse, (StatusCode, String)> {
     let result = workspace_core::discovery::discover_hermes().map_err(err_to_response)?;
     Ok(Json(result))
@@ -235,6 +239,7 @@ async fn main() {
         .route("/api/send_prompt", post(handle_send_prompt))
         .route("/api/discover_agents", get(handle_discover_agents))
         .route("/api/models", get(handle_list_models))
+        .route("/api/models/default", get(handle_get_default_model))
         .route("/api/discover_hermes", get(handle_discover_hermes))
         // Config
         .route("/api/config", get(handle_get_config))

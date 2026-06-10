@@ -69,11 +69,19 @@ export default function App() {
   const [activeModel, setActiveModel] = useState("");
   const [models, setModels] = useState([]);
 
-  // Load models on mount and when agent changes
+  // Load models and default model on mount and when agent changes
   useEffect(() => {
     invoke("list_models")
       .then((result) => setModels(result || []))
       .catch((err) => console.warn("list_models failed:", err));
+
+    invoke("get_default_model")
+      .then((result) => {
+        if (result && !activeModel) {
+          setActiveModel(result);
+        }
+      })
+      .catch((err) => console.warn("get_default_model failed:", err));
   }, [activeAgent]);
 
   useEffect(() => {

@@ -50,6 +50,7 @@ const COMMAND_MAP = {
   discover_hermes:        { method: "GET",    url: "/api/discover_hermes" },
   discover_agents:        { method: "GET",    url: "/api/discover_agents" },
   list_models:            { method: "GET",    url: "/api/models" },
+  get_default_model:      { method: "GET",    url: "/api/models/default" },
 
   // Harness
   send_prompt:            { method: "POST",   url: "/api/send_prompt" },

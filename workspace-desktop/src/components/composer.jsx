@@ -94,7 +94,8 @@ export function Composer({
             <select
               value={activeAgent || "hermes"}
               onChange={(e) => onAgentChange?.(e.target.value)}
-              className="cursor-pointer rounded border border-border bg-canvas px-2 py-0.5 text-xs text-text outline-none transition hover:border-accent/50 focus:border-accent"
+              className="cursor-pointer rounded border border-border px-2 py-0.5 text-xs outline-none transition hover:border-accent/50 focus:border-accent"
+              style={{ colorScheme: "dark", backgroundColor: "#1a1a2e", color: "#e0e0e0" }}
             >
               {agents.length === 0 ? (
                 <option value="hermes">hermes</option>
@@ -114,9 +115,9 @@ export function Composer({
             <select
               value={activeModel || ""}
               onChange={(e) => onModelChange?.(e.target.value)}
-              className="cursor-pointer rounded border border-border bg-canvas px-2 py-0.5 text-xs text-text outline-none transition hover:border-accent/50 focus:border-accent"
+              className="cursor-pointer rounded border border-border px-2 py-0.5 text-xs outline-none transition hover:border-accent/50 focus:border-accent"
+              style={{ colorScheme: "dark", backgroundColor: "#1a1a2e", color: "#e0e0e0" }}
             >
-              <option value="">default</option>
               {models.map((m) => (
                 <option key={m} value={m}>
                   {modelDisplayName(m)}

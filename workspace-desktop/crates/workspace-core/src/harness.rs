@@ -69,7 +69,9 @@ pub fn send_prompt(
         format!("{prefix}{text}")
     };
 
-    let agent_name = agent.as_deref().unwrap_or("hermes");
+    let agent_name = agent.as_deref()
+        .filter(|s| !s.is_empty())
+        .unwrap_or("hermes");
 
     match agent_name {
         "hermes" => crate::harness_hermes::send(hermes_bin, full_prompt, session_id, cwd, model),
@@ -222,4 +224,37 @@ pub fn list_models() -> Vec<String> {
     models.sort();
     models.dedup();
     models
+}
+
+/// Read the current default model from hermes config.yaml.
+/// Returns something like "deepseek/deepseek-v4-flash".
+pub fn get_default_model() -> Option<String> {
+    let config_path = dirs::home_dir()
+        .map(|h| h.join(".hermes").join("config.yaml"))?;
+
+    let contents = std::fs::read_to_string(&config_path).ok()?;
+
+    // Simple YAML parsing: find "model:" section, then "default:" line
+    let mut in_model_section = false;
+    for line in contents.lines() {
+        let trimmed = line.trim();
+        if trimmed == "model:" {
+            in_model_section = true;
+            continue;
+        }
+        if in_model_section {
+            // If we hit a non-indented line, we've left the model section
+            if !line.starts_with(' ') && !line.starts_with('\t') && !trimmed.is_empty() {
+                break;
+            }
+            if let Some(value) = trimmed.strip_prefix("default:") {
+                let model = value.trim().trim_matches('\'').trim_matches('"');
+                if !model.is_empty() {
+                    return Some(model.to_string());
+                }
+            }
+        }
+    }
+
+    None
 }
