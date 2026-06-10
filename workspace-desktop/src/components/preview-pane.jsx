@@ -16,6 +16,7 @@ async function convertFileSrc(path) {
 import { Markdown } from "./markdown";
 
 const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico"]);
+const PREVIEWABLE = new Set(["html", "htm", "md", "markdown"]);
 
 function extensionOf(path) {
   const name = path.split(/[\\/]/).at(-1) ?? "";
@@ -25,8 +26,16 @@ function extensionOf(path) {
 
 export function PreviewPane({ path, onClose }) {
   const [state, setState] = useState({ status: "loading" });
+  const [mode, setMode] = useState("preview"); // "source" | "preview"
   const extension = extensionOf(path);
   const isImage = IMAGE_EXTENSIONS.has(extension);
+  const canPreview = PREVIEWABLE.has(extension);
+
+  // Reset to preview mode when file changes
+  useEffect(() => {
+    if (canPreview) setMode("preview");
+    else setMode("source");
+  }, [path, canPreview]);
 
   useEffect(() => {
     if (isImage) {
@@ -54,23 +63,56 @@ export function PreviewPane({ path, onClose }) {
     };
   }, [isImage, path]);
 
+  const isHtml = extension === "html" || extension === "htm";
+  const isMd = extension === "md" || extension === "markdown";
+
   return (
     <aside
       data-testid="preview-pane"
-      className="flex w-[28rem] shrink-0 flex-col border-l border-border bg-sidebar"
+      className="flex h-full shrink-0 flex-col border-l border-border bg-sidebar"
+      style={{ width: "100%" }}
     >
       <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
         <p className="min-w-0 truncate font-mono text-xs text-muted" title={path}>
           {path}
         </p>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close preview"
-          className="rounded-md px-2 py-1 text-sm text-muted transition hover:bg-panel/70 hover:text-text"
-        >
-          ✕
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Source / Preview toggle for HTML and Markdown */}
+          {canPreview && state.status === "ready" && state.file && !state.file.binary ? (
+            <div className="flex rounded-md border border-border text-[10px]">
+              <button
+                type="button"
+                onClick={() => setMode("source")}
+                className={`px-2 py-0.5 transition ${
+                  mode === "source"
+                    ? "bg-accent/20 text-accent"
+                    : "text-muted hover:text-text"
+                }`}
+              >
+                Source
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("preview")}
+                className={`px-2 py-0.5 transition ${
+                  mode === "preview"
+                    ? "bg-accent/20 text-accent"
+                    : "text-muted hover:text-text"
+                }`}
+              >
+                Preview
+              </button>
+            </div>
+          ) : null}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close preview"
+            className="rounded-md px-2 py-1 text-sm text-muted transition hover:bg-panel/70 hover:text-text"
+          >
+            ✕
+          </button>
+        </div>
       </header>
       <div className="min-h-0 flex-1 overflow-auto p-4">
         {state.status === "loading" ? (
@@ -102,9 +144,20 @@ export function PreviewPane({ path, onClose }) {
                 File truncated for preview.
               </p>
             ) : null}
-            {extension === "md" || extension === "markdown" ? (
+
+            {/* Preview mode: render HTML/Markdown */}
+            {mode === "preview" && isHtml ? (
+              <iframe
+                srcDoc={state.file.content}
+                title="HTML Preview"
+                className="h-full w-full rounded-lg border border-border bg-white"
+                style={{ minHeight: "400px" }}
+                sandbox="allow-scripts"
+              />
+            ) : mode === "preview" && isMd ? (
               <Markdown content={state.file.content} />
             ) : (
+              /* Source mode: raw code */
               <pre className="overflow-x-auto rounded-lg bg-canvas p-3 font-mono text-xs leading-5 text-text">
                 {state.file.content}
               </pre>
