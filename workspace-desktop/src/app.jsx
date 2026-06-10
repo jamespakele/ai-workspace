@@ -205,7 +205,7 @@ export default function App() {
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-canvas text-text">
+    <div className="flex h-screen flex-col overflow-hidden bg-canvas text-text">
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* Sidebar — Project tree */}
         <Sidebar
