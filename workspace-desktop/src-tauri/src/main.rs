@@ -81,19 +81,30 @@ fn discover_hermes() -> Result<Vec<discovery::HermesInstance>, String> {
 }
 
 #[tauri::command]
-fn send_prompt(
+async fn send_prompt(
     agent: Option<String>,
     hermes_bin: Option<String>,
     text: String,
     session_id: Option<String>,
     cwd: Option<String>,
+    model: Option<String>,
 ) -> Result<harness::ChatResponse, String> {
-    harness::send_prompt(agent, hermes_bin, text, session_id, cwd)
+    // Run on a background thread so we don't freeze the UI
+    tokio::task::spawn_blocking(move || {
+        harness::send_prompt(agent, hermes_bin, text, session_id, cwd, model)
+    })
+    .await
+    .map_err(|e| format!("Task join error: {e}"))?
 }
 
 #[tauri::command]
 fn discover_agents() -> Vec<harness::AgentInfo> {
     harness::discover_agents()
+}
+
+#[tauri::command]
+fn list_models() -> Vec<String> {
+    harness::list_models()
 }
 
 #[tauri::command]
@@ -167,6 +178,7 @@ fn main() {
             discover_hermes,
             send_prompt,
             discover_agents,
+            list_models,
             load_workspace,
             init_workspace,
             scope_skill_to_project,

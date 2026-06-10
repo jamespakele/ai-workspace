@@ -5146,6 +5146,7 @@ dependencies = [
  "tauri-plugin-fs",
  "tauri-plugin-shell",
  "tauri-plugin-store",
+ "tokio",
  "workspace-core",
 ]
 

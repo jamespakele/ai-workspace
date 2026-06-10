@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { invoke } from "@/lib/api";
 
 export function Composer({
@@ -10,6 +10,9 @@ export function Composer({
   agents = [],
   activeAgent,
   onAgentChange,
+  activeModel,
+  onModelChange,
+  models = [],
 }) {
   const [text, setText] = useState("");
 
@@ -47,6 +50,12 @@ export function Composer({
     }
   };
 
+  // Display-friendly model name: strip provider prefix
+  const modelDisplayName = (id) => {
+    const parts = id.split("/");
+    return parts.length > 1 ? parts.slice(1).join("/") : id;
+  };
+
   return (
     <div className="border-t border-border bg-sidebar px-6 py-4">
       {/* Context badge */}
@@ -75,16 +84,17 @@ export function Composer({
         onKeyDown={handleKeyDown}
       />
 
-      {/* Agent info + send button */}
+      {/* Agent + Model info + send button */}
       <div className="mt-2 flex items-center justify-between">
-        <div className="flex items-center gap-3 font-mono text-xs text-muted">
+        <div className="flex items-center gap-4 font-mono text-xs text-muted">
+          {/* Agent selector */}
           <span className="inline-flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
             agent:
             <select
               value={activeAgent || "hermes"}
               onChange={(e) => onAgentChange?.(e.target.value)}
-              className="rounded border-none bg-transparent text-xs text-text outline-none cursor-pointer hover:text-accent"
+              className="cursor-pointer rounded border border-border bg-canvas px-2 py-0.5 text-xs text-text outline-none transition hover:border-accent/50 focus:border-accent"
             >
               {agents.length === 0 ? (
                 <option value="hermes">hermes</option>
@@ -95,6 +105,23 @@ export function Composer({
                   </option>
                 ))
               )}
+            </select>
+          </span>
+
+          {/* Model selector */}
+          <span className="inline-flex items-center gap-1.5">
+            model:
+            <select
+              value={activeModel || ""}
+              onChange={(e) => onModelChange?.(e.target.value)}
+              className="cursor-pointer rounded border border-border bg-canvas px-2 py-0.5 text-xs text-text outline-none transition hover:border-accent/50 focus:border-accent"
+            >
+              <option value="">default</option>
+              {models.map((m) => (
+                <option key={m} value={m}>
+                  {modelDisplayName(m)}
+                </option>
+              ))}
             </select>
           </span>
         </div>

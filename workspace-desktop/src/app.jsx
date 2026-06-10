@@ -66,6 +66,15 @@ export default function App() {
   const { config, saveConfig } = useAppConfig();
   const { agents } = useAgents();
   const activeAgent = config?.agent ?? "hermes";
+  const [activeModel, setActiveModel] = useState("");
+  const [models, setModels] = useState([]);
+
+  // Load models on mount and when agent changes
+  useEffect(() => {
+    invoke("list_models")
+      .then((result) => setModels(result || []))
+      .catch((err) => console.warn("list_models failed:", err));
+  }, [activeAgent]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -135,6 +144,7 @@ export default function App() {
           text,
           sessionId: activeSessionId ?? "",
           cwd: projectDir ?? null,
+          model: activeModel || null,
         });
 
         if (result.session_id) {
@@ -174,7 +184,7 @@ export default function App() {
         setIsStreaming(false);
       }
     },
-    [activeSessionId, activeAgent, config, refresh, setActiveSessionId],
+    [activeSessionId, activeAgent, activeModel, config, refresh, setActiveSessionId],
   );
 
   const handleAgentChange = useCallback(
@@ -240,6 +250,9 @@ export default function App() {
             agents={agents}
             activeAgent={activeAgent}
             onAgentChange={handleAgentChange}
+            activeModel={activeModel}
+            onModelChange={setActiveModel}
+            models={models}
           />
         </main>
 

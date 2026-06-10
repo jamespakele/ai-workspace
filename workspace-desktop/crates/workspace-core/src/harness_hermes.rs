@@ -8,6 +8,7 @@ pub fn send(
     text: String,
     session_id: Option<String>,
     cwd: Option<String>,
+    model: Option<String>,
 ) -> Result<ChatResponse, String> {
     let bin = hermes_bin
         .filter(|s| !s.trim().is_empty())
@@ -15,6 +16,13 @@ pub fn send(
 
     let mut cmd = Command::new(&bin);
     cmd.args(["chat", "-q", &text, "-Q"]);
+
+    // Pass model if specified
+    if let Some(m) = &model {
+        if !m.is_empty() {
+            cmd.args(["-m", m]);
+        }
+    }
 
     if let Some(sid) = &session_id {
         if !sid.is_empty() {

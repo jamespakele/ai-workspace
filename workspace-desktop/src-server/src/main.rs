@@ -17,6 +17,7 @@ struct SendPromptRequest {
     text: String,
     session_id: Option<String>,
     cwd: Option<String>,
+    model: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -56,13 +57,19 @@ fn err_to_response(e: String) -> (StatusCode, String) {
 async fn handle_send_prompt(
     Json(req): Json<SendPromptRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
-    let result = workspace_core::harness::send_prompt(
-        req.agent,
-        req.hermes_bin,
-        req.text,
-        req.session_id,
-        req.cwd,
-    )
+    // Run on a background thread so we don't block the async runtime
+    let result = tokio::task::spawn_blocking(move || {
+        workspace_core::harness::send_prompt(
+            req.agent,
+            req.hermes_bin,
+            req.text,
+            req.session_id,
+            req.cwd,
+            req.model,
+        )
+    })
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Task join error: {e}")))?
     .map_err(err_to_response)?;
 
     Ok(Json(result))
@@ -70,6 +77,10 @@ async fn handle_send_prompt(
 
 async fn handle_discover_agents() -> impl IntoResponse {
     Json(workspace_core::harness::discover_agents())
+}
+
+async fn handle_list_models() -> impl IntoResponse {
+    Json(workspace_core::harness::list_models())
 }
 
 async fn handle_discover_hermes() -> Result<impl IntoResponse, (StatusCode, String)> {
@@ -223,6 +234,7 @@ async fn main() {
         // Harness
         .route("/api/send_prompt", post(handle_send_prompt))
         .route("/api/discover_agents", get(handle_discover_agents))
+        .route("/api/models", get(handle_list_models))
         .route("/api/discover_hermes", get(handle_discover_hermes))
         // Config
         .route("/api/config", get(handle_get_config))

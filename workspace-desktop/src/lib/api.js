@@ -49,6 +49,7 @@ const COMMAND_MAP = {
   // Discovery
   discover_hermes:        { method: "GET",    url: "/api/discover_hermes" },
   discover_agents:        { method: "GET",    url: "/api/discover_agents" },
+  list_models:            { method: "GET",    url: "/api/models" },
 
   // Harness
   send_prompt:            { method: "POST",   url: "/api/send_prompt" },

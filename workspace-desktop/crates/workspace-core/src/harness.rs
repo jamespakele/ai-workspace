@@ -54,6 +54,7 @@ pub fn send_prompt(
     text: String,
     session_id: Option<String>,
     cwd: Option<String>,
+    model: Option<String>,
 ) -> Result<ChatResponse, String> {
     if text.trim().is_empty() {
         return Err("Prompt text is empty".to_string());
@@ -71,7 +72,7 @@ pub fn send_prompt(
     let agent_name = agent.as_deref().unwrap_or("hermes");
 
     match agent_name {
-        "hermes" => crate::harness_hermes::send(hermes_bin, full_prompt, session_id, cwd),
+        "hermes" => crate::harness_hermes::send(hermes_bin, full_prompt, session_id, cwd, model),
         "claude" => crate::harness_claude::send(full_prompt, session_id, cwd),
         "gemini" => crate::harness_gemini::send(full_prompt, session_id, cwd),
         "codex" => crate::harness_codex::send(full_prompt, session_id, cwd),
@@ -174,4 +175,51 @@ pub fn clean_output(raw: &str) -> String {
     }
 
     result.trim().to_string()
+}
+
+/// List available models from the hermes provider cache.
+/// Returns a sorted list of model ID strings.
+pub fn list_models() -> Vec<String> {
+    let cache_path = dirs::home_dir()
+        .map(|h| h.join(".hermes").join("provider_models_cache.json"));
+
+    let path = match cache_path {
+        Some(p) if p.exists() => p,
+        _ => return Vec::new(),
+    };
+
+    let contents = match std::fs::read_to_string(&path) {
+        Ok(c) => c,
+        Err(_) => return Vec::new(),
+    };
+
+    // The cache is {"openrouter": {"models": [{"id": "...", ...}, ...], ...}}
+    let parsed: serde_json::Value = match serde_json::from_str(&contents) {
+        Ok(v) => v,
+        Err(_) => return Vec::new(),
+    };
+
+    let mut models = Vec::new();
+
+    if let Some(obj) = parsed.as_object() {
+        for (_provider, provider_data) in obj {
+            // Try "models" key first, then "data"
+            for key in &["models", "data"] {
+                if let Some(model_list) = provider_data.get(*key).and_then(|m| m.as_array()) {
+                    for model in model_list {
+                        // Models can be plain strings or objects with an "id" field
+                        if let Some(id) = model.as_str() {
+                            models.push(id.to_string());
+                        } else if let Some(id) = model.get("id").and_then(|i| i.as_str()) {
+                            models.push(id.to_string());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    models.sort();
+    models.dedup();
+    models
 }
