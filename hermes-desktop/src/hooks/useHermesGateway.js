@@ -44,6 +44,7 @@ export function useHermesGateway({ onChatEvent } = {}) {
   const reconnectAttemptRef = useRef(0);
   const hasReachedCeilingRef = useRef(false);
   const configRef = useRef(null);
+  const gatewayWsUrlRef = useRef(null);
   const onChatEventRef = useRef(onChatEvent);
 
   useEffect(() => {
@@ -138,7 +139,8 @@ export function useHermesGateway({ onChatEvent } = {}) {
     };
 
     const connect = async () => {
-      if (isUnmountedRef.current || !configRef.current?.gateway_url) {
+      const wsUrl = gatewayWsUrlRef.current || configRef.current?.gateway_url;
+      if (isUnmountedRef.current || !wsUrl) {
         return;
       }
 
@@ -151,7 +153,7 @@ export function useHermesGateway({ onChatEvent } = {}) {
           : "connecting",
       );
 
-      const socket = new WebSocket(configRef.current.gateway_url);
+      const socket = new WebSocket(wsUrl);
       socketRef.current = socket;
 
       socket.onopen = () => {
@@ -204,9 +206,13 @@ export function useHermesGateway({ onChatEvent } = {}) {
 
         if (config.auto_start_gateway) {
           try {
-            await invoke("spawn_gateway", { hermesBin: config.hermes_bin });
+            const gatewayInfo = await invoke("spawn_gateway", {
+              hermesBin: config.hermes_bin,
+            });
+            gatewayWsUrlRef.current = gatewayInfo.ws_url;
           } catch {
-            // The gateway may already be running externally.
+            // spawn_gateway failed — fall back to config.gateway_url
+            // (the gateway may already be running externally).
           }
         }
 
@@ -224,6 +230,7 @@ export function useHermesGateway({ onChatEvent } = {}) {
     isUnmountedRef.current = false;
     reconnectAttemptRef.current = 0;
     hasReachedCeilingRef.current = false;
+    gatewayWsUrlRef.current = null;
     setTokenCount(0);
     void initialize();
 

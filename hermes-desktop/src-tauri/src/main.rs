@@ -33,6 +33,7 @@ fn main() {
             fs::read_file,
             gateway::spawn_gateway,
             gateway::kill_gateway,
+            gateway::get_gateway_info,
             skills::import_skill,
             skills::list_skills,
             scheduled::list_scheduled_tasks,
@@ -49,7 +50,7 @@ fn main() {
                     Err(_) => None,
                 };
 
-                if let Some(mut child) = child_to_kill {
+                if let Some((mut child, _info)) = child_to_kill {
                     let _ = child.kill();
                 }
             }
