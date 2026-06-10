@@ -1,0 +1,21 @@
+services:
+  workspace:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      # Workspace context (soul.md, os.md, skills, plugins)
+      - ~/.workspace:/root/.workspace
+
+      # Vault (Obsidian or any markdown knowledge base)
+      - ~/vault:/vault
+
+      # Agent configs (if using Hermes)
+      - ~/.hermes:/root/.hermes
+
+      # Project files (mount your code)
+      - ~/projects:/projects
+    environment:
+      - WORKSPACE_AGENT=hermes
+      - PORT=3000
+    restart: unless-stopped

@@ -8,21 +8,13 @@ const contextLevelClassName = {
   critical: "text-red-400",
 };
 
-const statusClassName = {
-  connecting: "bg-gray-400",
-  connected: "bg-green-400",
-  reconnecting: "bg-yellow-400 animate-pulse",
-  disconnected: "bg-red-500",
-};
-
 export function StatusBar({
-  gatewayStatus,
-  activeModel,
+  activeAgent,
+  activeProjectName,
   activeSessionId,
   tokenCount,
   contextWindow,
   onSettingsOpen,
-  onConnectOpen,
 }) {
   const usage = computeContextUsage(tokenCount, contextWindow);
 
@@ -30,23 +22,12 @@ export function StatusBar({
     <footer className="flex h-statusbar items-center justify-between border-t border-border bg-sidebar px-4 font-mono text-xs text-muted">
       <div className="flex items-center gap-3">
         <span className="inline-flex items-center gap-2">
-          <span
-            className={`h-2 w-2 rounded-full ${statusClassName[gatewayStatus] ?? statusClassName.disconnected}`}
-          />
-          gateway {gatewayStatus}
+          <span className="h-2 w-2 rounded-full bg-green-400" />
+          agent: {activeAgent || "none"}
         </span>
-        <button
-          type="button"
-          onClick={onConnectOpen}
-          aria-label="Connect to Hermes"
-          className="rounded-md border border-border px-2 py-0.5 text-muted transition hover:border-accent/40 hover:text-text"
-        >
-          connect
-        </button>
-        <span>model: {activeModel ?? "—"}</span>
+        <span>project: {activeProjectName || "none"}</span>
       </div>
       <div className="flex items-center gap-3">
-        <span>project: none</span>
         <span>session: {activeSessionId ? `${activeSessionId.slice(0, 8)}…` : "—"}</span>
         <span>tokens: {tokenCount.toLocaleString()}</span>
         <span

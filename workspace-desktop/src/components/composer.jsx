@@ -110,7 +110,7 @@ export function Composer({
         <textarea
           className="mt-3 h-28 w-full resize-none rounded-xl border border-border bg-canvas px-3 py-3 text-sm text-text outline-none placeholder:text-muted disabled:opacity-50"
           placeholder={
-            isStreaming ? "Hermes is thinking…" : "Message Hermes… ( / for commands)"
+            isStreaming ? "Agent is thinking…" : "Message your agent… ( / for commands)"
           }
           disabled={isStreaming}
           value={text}

@@ -4,7 +4,6 @@
 mod config;
 mod discovery;
 mod fs;
-mod gateway;
 mod harness;
 mod harness_claude;
 mod harness_codex;
@@ -16,10 +15,7 @@ mod projects;
 mod scheduled;
 mod sessions;
 mod skills;
-
-use gateway::GatewayState;
-use std::sync::Mutex;
-use tauri::Manager;
+mod workspace;
 
 fn main() {
     tauri::Builder::default()
@@ -27,7 +23,6 @@ fn main() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_store::Builder::default().build())
-        .manage(GatewayState(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             sessions::list_sessions,
             sessions::get_session_messages,
@@ -37,9 +32,6 @@ fn main() {
             projects::add_project,
             fs::read_dir,
             fs::read_file,
-            gateway::spawn_gateway,
-            gateway::kill_gateway,
-            gateway::get_gateway_info,
             skills::import_skill,
             skills::list_skills,
             scheduled::list_scheduled_tasks,
@@ -49,20 +41,10 @@ fn main() {
             discovery::discover_hermes,
             harness::send_prompt,
             harness::discover_agents,
+            workspace::load_workspace,
+            workspace::init_workspace,
+            workspace::scope_skill_to_project,
         ])
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { .. } = event {
-                let state = window.state::<GatewayState>();
-                let child_to_kill = match state.0.lock() {
-                    Ok(mut guard) => guard.take(),
-                    Err(_) => None,
-                };
-
-                if let Some((mut child, _info)) = child_to_kill {
-                    let _ = child.kill();
-                }
-            }
-        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

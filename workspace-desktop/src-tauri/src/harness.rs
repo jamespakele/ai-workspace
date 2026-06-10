@@ -48,6 +48,7 @@ pub fn discover_agents() -> Vec<AgentInfo> {
 }
 
 /// Dispatch a prompt to the right agent harness.
+/// Loads workspace context (soul.md + os.md) and prepends it to every prompt.
 #[tauri::command]
 pub fn send_prompt(
     agent: Option<String>,
@@ -60,14 +61,23 @@ pub fn send_prompt(
         return Err("Prompt text is empty".to_string());
     }
 
+    // Load workspace context and prepend soul + os to the prompt.
+    let workspace_ctx = super::workspace::load_workspace(cwd.clone());
+    let prefix = super::workspace::build_context_prefix(&workspace_ctx);
+    let full_prompt = if prefix.is_empty() {
+        text
+    } else {
+        format!("{prefix}{text}")
+    };
+
     let agent_name = agent.as_deref().unwrap_or("hermes");
 
     match agent_name {
-        "hermes" => super::harness_hermes::send(hermes_bin, text, session_id, cwd),
-        "claude" => super::harness_claude::send(text, session_id, cwd),
-        "gemini" => super::harness_gemini::send(text, session_id, cwd),
-        "codex" => super::harness_codex::send(text, session_id, cwd),
-        "pi" => super::harness_pi::send(text, session_id, cwd),
+        "hermes" => super::harness_hermes::send(hermes_bin, full_prompt, session_id, cwd),
+        "claude" => super::harness_claude::send(full_prompt, session_id, cwd),
+        "gemini" => super::harness_gemini::send(full_prompt, session_id, cwd),
+        "codex" => super::harness_codex::send(full_prompt, session_id, cwd),
+        "pi" => super::harness_pi::send(full_prompt, session_id, cwd),
         other => Err(format!("Unknown agent: {other}")),
     }
 }

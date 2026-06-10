@@ -1,7 +1,7 @@
 [package]
-name = "hermes-desktop"
+name = "workspace-desktop"
 version = "0.1.0"
-description = "Hermes Desktop"
+description = "Workspace Desktop"
 authors = ["James Pakele"]
 edition = "2021"
 

@@ -7,17 +7,26 @@ import { StatusBar } from "./components/statusbar";
 import { UserMessage, AssistantMessage } from "./components/message";
 import { Composer } from "./components/composer";
 import { SessionSwitcher } from "./components/session-switcher";
-import { ConnectWizard } from "./components/connect-wizard";
 import { PlanPanel } from "./components/plan-panel";
 import { PreviewPane } from "./components/preview-pane";
 import { useSessions } from "./hooks/useSessions";
 import { useSkills } from "./hooks/useSkills";
 import { useScheduledTasks } from "./hooks/useScheduledTasks";
 import { useAppConfig } from "./hooks/useAppConfig";
+import { useWorkspace } from "./hooks/useWorkspace";
+import { useAgents } from "./hooks/useAgents";
+
+function basename(path) {
+  if (!path) {
+    return "";
+  }
+
+  const parts = path.split(/[\\/]/).filter(Boolean);
+  return parts.at(-1) ?? path;
+}
 
 export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [connectOpen, setConnectOpen] = useState(false);
   const [pendingContextPath, setPendingContextPath] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -32,6 +41,10 @@ export default function App() {
   const { sessions, activeSessionId, setActiveSessionId, refresh } = useSessions();
   const { skills } = useSkills();
   const { config, saveConfig } = useAppConfig();
+  const { agents } = useAgents();
+  const activeProjectPath = config?.active_project ?? "";
+  const activeAgent = config?.agent ?? "hermes";
+  const workspace = useWorkspace(activeProjectPath || null);
   const {
     tasks: scheduledTasks,
     addTask,
@@ -57,10 +70,10 @@ export default function App() {
       try {
         const hermesBin =
           config?.hermes_bin || "/home/pakele/.local/bin/hermes";
-        const projectDir = config?.project_dir || undefined;
+        const projectDir = activeProjectPath || undefined;
 
         const result = await invoke("send_prompt", {
-          agent: config?.agent ?? "hermes",
+          agent: activeAgent,
           hermesBin,
           text,
           sessionId: activeSessionId ?? "",
@@ -100,31 +113,17 @@ export default function App() {
         setIsStreaming(false);
       }
     },
-    [activeSessionId, config, refresh, setActiveSessionId],
+    [activeSessionId, activeAgent, activeProjectPath, config, refresh, setActiveSessionId],
   );
 
   const handleCompact = () => {
     // Compact is handled by the CLI's built-in compression.
-    // No-op in CLI mode — Hermes auto-compresses when needed.
+    // No-op in CLI mode — agents auto-compress when needed.
   };
 
   const handleOpenSchedule = () => {
     setSidebarTab("scheduled");
     setScheduleCreateOpen(true);
-  };
-
-  const handleConnectInstance = async (instance) => {
-    const next = {
-      ...(config ?? {}),
-      ...(instance.hermes_bin ? { hermes_bin: instance.hermes_bin } : {}),
-    };
-
-    try {
-      await saveConfig(next);
-      setConnectOpen(false);
-    } catch (error) {
-      console.error("connect failed:", error);
-    }
   };
 
   // When resuming a session, load its history from the DB.
@@ -174,6 +173,14 @@ export default function App() {
           outputs={outputs}
           activeTab={sidebarTab}
           onTabChange={setSidebarTab}
+          workspace={workspace}
+          agents={agents}
+          activeAgent={activeAgent}
+          onAgentChange={async (agentName) => {
+            if (config) {
+              await saveConfig({ ...config, agent: agentName });
+            }
+          }}
           scheduled={{
             tasks: scheduledTasks,
             onAdd: addTask,
@@ -216,7 +223,7 @@ export default function App() {
             {isStreaming ? (
               <div className="flex items-center gap-3 px-4 py-3 text-sm text-muted">
                 <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-                Hermes is thinking…
+                {activeAgent} is thinking…
               </div>
             ) : null}
             <div ref={messagesEndRef} />
@@ -241,22 +248,16 @@ export default function App() {
         ) : null}
       </div>
       <StatusBar
-        gatewayStatus="cli"
-        activeModel={null}
+        activeAgent={activeAgent}
+        activeProjectName={basename(activeProjectPath)}
         activeSessionId={activeSessionId}
         tokenCount={0}
         contextWindow={config?.context_window ?? undefined}
         onSettingsOpen={() => setSettingsOpen(true)}
-        onConnectOpen={() => setConnectOpen(true)}
       />
       <SettingsPanel
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
-      />
-      <ConnectWizard
-        open={connectOpen}
-        onClose={() => setConnectOpen(false)}
-        onConnect={handleConnectInstance}
       />
     </div>
   );

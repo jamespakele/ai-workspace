@@ -71,7 +71,7 @@ export function SessionSwitcher({
       >
         <div className="min-w-0 flex-1">
           <p className="font-mono text-xs uppercase tracking-[0.3em] text-muted">
-            Hermes Desktop
+            Workspace
           </p>
           <p className="mt-1 truncate text-base font-semibold text-text">{triggerLabel}</p>
         </div>

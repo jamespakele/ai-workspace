@@ -9,6 +9,7 @@ import { ScheduledPanel } from "./scheduled-panel";
 
 const TABS = [
   { id: "files", label: "Files" },
+  { id: "workspace", label: "Workspace" },
   { id: "scheduled", label: "Scheduled" },
   { id: "outputs", label: "Outputs" },
 ];
@@ -85,6 +86,10 @@ export function Sidebar({
   scheduled,
   activeTab,
   onTabChange,
+  workspace,
+  agents = [],
+  activeAgent,
+  onAgentChange,
 }) {
   const { config, saveConfig } = useAppConfig();
   const { projects, addProject } = useProjects();
@@ -285,6 +290,100 @@ export function Sidebar({
             createOpen={scheduled.createOpen}
             onCreateOpenChange={scheduled.onCreateOpenChange}
           />
+        ) : null}
+
+        {activeTab === "workspace" ? (
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+            {/* Agent Selector */}
+            <div>
+              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">Agent</p>
+              <select
+                value={activeAgent || ""}
+                onChange={(e) => onAgentChange?.(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-border bg-panel px-3 py-2 text-sm text-text outline-none focus:border-accent"
+              >
+                {agents.length === 0 ? (
+                  <option value="hermes">hermes (default)</option>
+                ) : (
+                  agents.map((a) => (
+                    <option key={a.name} value={a.name}>
+                      {a.name} {a.version ? `(${a.version})` : ""}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
+            {/* Soul & OS */}
+            <div>
+              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">Always Loaded</p>
+              <div className="mt-2 space-y-1">
+                <button
+                  type="button"
+                  onClick={() => onOpenFile?.("~/.workspace/soul.md")}
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition hover:bg-panel/70"
+                >
+                  <span className="text-text">soul.md</span>
+                  <span className={`text-xs ${workspace?.soul ? "text-green-400" : "text-muted"}`}>
+                    {workspace?.soul ? "loaded" : "empty"}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onOpenFile?.("~/.workspace/os.md")}
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition hover:bg-panel/70"
+                >
+                  <span className="text-text">os.md</span>
+                  <span className={`text-xs ${workspace?.os ? "text-green-400" : "text-muted"}`}>
+                    {workspace?.os ? "loaded" : "empty"}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* Skills */}
+            <div>
+              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
+                Skills ({workspace?.skills?.length ?? 0})
+              </p>
+              <ul className="mt-2 space-y-1">
+                {(workspace?.skills ?? []).map((skill) => (
+                  <li
+                    key={skill.name}
+                    className="flex items-center justify-between rounded-lg px-3 py-2 text-sm"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-text">{skill.name}</p>
+                      {skill.description ? (
+                        <p className="mt-0.5 truncate text-xs text-muted">{skill.description}</p>
+                      ) : null}
+                    </div>
+                    {skill.is_symlink ? (
+                      <span className="ml-2 shrink-0 rounded bg-accent/10 px-1.5 py-0.5 text-[10px] font-medium text-accent">
+                        linked
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+                {(workspace?.skills ?? []).length === 0 ? (
+                  <li className="px-3 py-2 text-sm text-muted">
+                    No skills installed. Add skills to ~/.workspace/skills/
+                  </li>
+                ) : null}
+              </ul>
+            </div>
+
+            {/* Init workspace button */}
+            {!workspace?.soul && !workspace?.os ? (
+              <button
+                type="button"
+                onClick={() => workspace?.initWorkspace?.()}
+                className="w-full rounded-xl border border-accent/30 bg-accent/5 px-3 py-2.5 text-sm font-medium text-accent transition hover:bg-accent/10"
+              >
+                Initialize Workspace
+              </button>
+            ) : null}
+          </div>
         ) : null}
 
         {activeTab === "outputs" ? (
