@@ -2,7 +2,9 @@ use std::process::Command;
 use crate::harness::{ChatResponse, clean_output};
 
 /// Claude Code (Anthropic) — CLI coding agent.
-/// CLI: `claude -p "text" --output-format text --resume <id>`
+/// CLI: `claude -p "text" --output-format text`
+/// Resume: `claude -p "text" --resume <session_id>`
+/// Model: `claude -p "text" --model <model>`
 pub fn send(
     text: String,
     session_id: Option<String>,

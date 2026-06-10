@@ -1,23 +1,36 @@
 use std::process::Command;
-use crate::harness::{ChatResponse, clean_output};
+use crate::harness::{ChatResponse, clean_output, which_bin_pub};
 
-/// Google Gemini CLI — coding agent.
-/// Non-interactive: `gemini -p "text"`
-/// Model override: `gemini -m <model> -p "text"`
+/// Antigravity / AGY (Google) — AI coding agent.
+/// Non-interactive: `agy -p "text"` or `agy --print "text"`
+/// Model override: `agy --model <model> -p "text"`
+/// Resume: `agy --conversation <session_id> -p "text"`
+/// Continue: `agy -c -p "text"` (continue most recent)
 pub fn send(
     text: String,
     session_id: Option<String>,
     cwd: Option<String>,
     model: Option<String>,
 ) -> Result<ChatResponse, String> {
-    let bin = "gemini";
+    // Try agy first, fall back to antigravity
+    let bin = if which_bin_pub("agy").is_some() {
+        "agy"
+    } else {
+        "antigravity"
+    };
 
     let mut cmd = Command::new(bin);
     cmd.args(["-p", &text]);
 
     if let Some(m) = &model {
         if !m.is_empty() {
-            cmd.args(["-m", m]);
+            cmd.args(["--model", m]);
+        }
+    }
+
+    if let Some(sid) = &session_id {
+        if !sid.is_empty() {
+            cmd.args(["--conversation", sid]);
         }
     }
 
@@ -28,14 +41,14 @@ pub fn send(
     }
 
     let output = cmd.output().map_err(|error| {
-        format!("Failed to run gemini: {error}. Install: npm install -g @google/gemini-cli")
+        format!("Failed to run {bin}: {error}")
     })?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         let stdout = String::from_utf8_lossy(&output.stdout);
         let detail = if stderr.trim().is_empty() { stdout.trim().to_string() } else { stderr.trim().to_string() };
-        return Err(format!("gemini exited with {}: {detail}", output.status));
+        return Err(format!("{bin} exited with {}: {detail}", output.status));
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -44,6 +57,6 @@ pub fn send(
     Ok(ChatResponse {
         session_id: session_id.unwrap_or_default(),
         response,
-        agent: "gemini".to_string(),
+        agent: "antigravity".to_string(),
     })
 }

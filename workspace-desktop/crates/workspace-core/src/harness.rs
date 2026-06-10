@@ -20,11 +20,15 @@ pub struct AgentInfo {
 /// Discover which agent CLIs are installed on the system.
 pub fn discover_agents() -> Vec<AgentInfo> {
     let candidates = [
-        ("hermes", &["hermes"][..]),
-        ("claude", &["claude"]),
-        ("gemini", &["gemini"]),
-        ("codex", &["codex"]),
-        ("pi", &["pi"]),
+        ("hermes",       &["hermes"][..]),
+        ("claude",       &["claude"]),
+        ("gemini",       &["gemini"]),
+        ("codex",        &["codex"]),
+        ("antigravity",  &["agy", "antigravity"]),
+        ("pi",           &["pi"]),
+        ("aider",        &["aider"]),
+        ("goose",        &["goose"]),
+        ("amp",          &["amp"]),
     ];
 
     let mut agents = Vec::new();
@@ -76,9 +80,14 @@ pub fn send_prompt(
     match agent_name {
         "hermes" => crate::harness_hermes::send(hermes_bin, full_prompt, session_id, cwd, model),
         "claude" => crate::harness_claude::send(full_prompt, session_id, cwd),
-        "gemini" => crate::harness_gemini::send(full_prompt, session_id, cwd),
-        "codex" => crate::harness_codex::send(full_prompt, session_id, cwd),
+        "gemini" => crate::harness_gemini::send(full_prompt, session_id, cwd, model),
+        "codex" => crate::harness_codex::send(full_prompt, session_id, cwd, model),
+        "antigravity" => crate::harness_antigravity::send(full_prompt, session_id, cwd, model),
         "pi" => crate::harness_pi::send(full_prompt, session_id, cwd),
+        // Generic agents: aider, goose, amp, and future additions
+        "aider" | "goose" | "amp" => {
+            crate::harness_generic::send(agent_name, agent_name, full_prompt, session_id, cwd, model)
+        }
         other => Err(format!("Unknown agent: {other}")),
     }
 }
@@ -93,6 +102,11 @@ fn which_bin(name: &str) -> Option<String> {
         .filter(|o| o.status.success())
         .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
         .filter(|s| !s.is_empty())
+}
+
+/// Public version of which_bin for use by agent harnesses.
+pub fn which_bin_pub(name: &str) -> Option<String> {
+    which_bin(name)
 }
 
 fn get_version(bin: &str, _agent_name: &str) -> String {
@@ -155,13 +169,18 @@ pub fn strip_ansi(input: &str) -> String {
     result
 }
 
-/// Collapse excessive blank lines and trim.
+/// Collapse excessive blank lines, strip diff blocks, and trim.
 pub fn clean_output(raw: &str) -> String {
     let stripped = strip_ansi(raw);
-    let mut result = String::with_capacity(stripped.len());
+
+    // First pass: strip diff blocks and large code blocks
+    let collapsed = collapse_blocks(&stripped);
+
+    // Second pass: collapse excessive blank lines
+    let mut result = String::with_capacity(collapsed.len());
     let mut blank_count = 0;
 
-    for line in stripped.lines() {
+    for line in collapsed.lines() {
         if line.trim().is_empty() {
             blank_count += 1;
             if blank_count <= 2 {
@@ -177,6 +196,65 @@ pub fn clean_output(raw: &str) -> String {
     }
 
     result.trim().to_string()
+}
+
+/// Collapse diff blocks, code fences, and tool review sections into short summaries.
+fn collapse_blocks(input: &str) -> String {
+    let mut result = String::with_capacity(input.len());
+    let mut lines = input.lines().peekable();
+
+    while let Some(line) = lines.next() {
+        let trimmed = line.trim();
+
+        // Detect diff block: "┊ review diff a/file → b/file"
+        if trimmed.starts_with("┊ review diff") || trimmed.starts_with("┊ review diff") {
+            // Extract filename from the diff header
+            let filename = trimmed
+                .rsplit("→ b/")
+                .next()
+                .or_else(|| trimmed.rsplit("→ b/").next())
+                .unwrap_or("file")
+                .trim();
+
+            // Skip all lines until the diff block ends (next non-diff content)
+            while let Some(&next) = lines.peek() {
+                let nt = next.trim();
+                if nt.starts_with('+') || nt.starts_with('-') || nt.starts_with('@')
+                    || nt.starts_with("…") || nt.starts_with("... omitted")
+                    || nt.is_empty()
+                    || nt.starts_with("<!") || nt.starts_with("<html") || nt.starts_with("<head")
+                    || nt.starts_with("<body") || nt.starts_with("<style") || nt.starts_with("</")
+                    || nt.starts_with("<h") || nt.starts_with("<table") || nt.starts_with("<t")
+                    || nt.starts_with("<span") || nt.starts_with("```")
+                {
+                    lines.next();
+                } else {
+                    break;
+                }
+            }
+
+            result.push_str(&format!("\n📄 *[file changed: {filename}]*\n"));
+            continue;
+        }
+
+        // Detect fenced code blocks with HTML/diff content
+        if trimmed.starts_with("```html") || trimmed.starts_with("```diff") {
+            let lang = trimmed.trim_start_matches('`').trim();
+            // Skip until closing ```
+            while let Some(next) = lines.next() {
+                if next.trim() == "```" {
+                    break;
+                }
+            }
+            result.push_str(&format!("\n📄 *[{lang} block omitted]*\n"));
+            continue;
+        }
+
+        result.push_str(line);
+        result.push('\n');
+    }
+
+    result
 }
 
 /// List available models from the hermes provider cache.
