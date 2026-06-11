@@ -103,8 +103,9 @@ fn discover_agents() -> Vec<harness::AgentInfo> {
 }
 
 #[tauri::command]
-fn list_models() -> Vec<String> {
-    harness::list_models()
+fn list_models(agent: Option<String>) -> Vec<String> {
+    let agent_name = agent.as_deref().unwrap_or("hermes");
+    harness::list_models_for_agent(agent_name)
 }
 
 #[tauri::command]
