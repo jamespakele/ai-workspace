@@ -84,7 +84,7 @@ pub fn send_prompt(
         "gemini" => crate::harness_gemini::send(full_prompt, session_id, cwd, model),
         "codex" => crate::harness_codex::send(full_prompt, session_id, cwd, model),
         "antigravity" => crate::harness_antigravity::send(full_prompt, session_id, cwd, model),
-        "pi" => crate::harness_pi::send(full_prompt, session_id, cwd),
+        "pi" => crate::harness_pi::send(full_prompt, session_id, cwd, model),
         "ollama" => crate::harness_ollama::send(full_prompt, session_id, cwd, model),
         // Generic agents: aider, goose, amp, and future additions
         "aider" | "goose" | "amp" => {
@@ -307,7 +307,7 @@ pub fn list_models_for_agent(agent: &str) -> Vec<String> {
         "antigravity"  => crate::harness_antigravity::list_models(),
         "ollama"       => crate::harness_ollama::list_models(),
         // Agents without model selection return empty
-        "pi"           => Vec::new(),
+        "pi"           => crate::harness_pi::list_models(),
         // Generic / unknown: fall back to hermes cache
         _              => crate::harness_hermes::list_models(),
     }
