@@ -58,10 +58,12 @@ pub fn send(
 /// We query `claude --help` and parse the --model description for known aliases,
 /// but the CLI doesn't have a `models` subcommand, so we return the known set.
 pub fn list_models() -> Vec<String> {
-    // Claude CLI accepts these aliases as --model values
+    // Claude CLI accepts aliases (sonnet, opus) or full model names.
+    // We use full names so the dropdown is unambiguous.
     vec![
-        "sonnet".to_string(),
-        "opus".to_string(),
-        "haiku".to_string(),
+        "claude-sonnet-4-6".to_string(),
+        "claude-opus-4-8".to_string(),
+        "claude-haiku-4-5".to_string(),
+        "claude-fable-5".to_string(),
     ]
 }
