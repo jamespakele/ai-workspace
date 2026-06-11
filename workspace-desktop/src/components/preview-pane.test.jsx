@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { mockCommand, resetInvokeMocks } from "../test/tauri-mock";
 
 vi.mock("@tauri-apps/api/core", () => import("../test/tauri-mock"));
+vi.mock("@/lib/api", () => import("../test/tauri-mock"));
 
 import { PreviewPane } from "./preview-pane";
 
@@ -67,13 +68,15 @@ describe("PreviewPane", () => {
     );
   });
 
-  it("renders images via the asset protocol without reading the file", () => {
+  it("renders images via the file endpoint without reading the file", async () => {
     render(<PreviewPane path="/proj/chart.png" onClose={() => {}} />);
 
-    const image = screen.getByRole("img");
+    // Outside Tauri, images are served through the API file endpoint. The
+    // URL is resolved asynchronously, so wait for the src to be populated.
+    const image = await screen.findByRole("img");
     expect(image).toHaveAttribute(
       "src",
-      expect.stringContaining("asset://localhost/"),
+      expect.stringContaining("/api/fs/file?path="),
     );
   });
 
