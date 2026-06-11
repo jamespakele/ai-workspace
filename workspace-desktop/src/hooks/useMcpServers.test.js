@@ -4,6 +4,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { mockCommand, resetInvokeMocks } from "../test/tauri-mock";
 
 vi.mock("@tauri-apps/api/core", () => import("../test/tauri-mock"));
+vi.mock("@/lib/api", () => import("../test/tauri-mock"));
 
 import { useMcpServers } from "./useMcpServers";
 

@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { mockCommand, resetInvokeMocks } from "../test/tauri-mock";
 
 vi.mock("@tauri-apps/api/core", () => import("../test/tauri-mock"));
+vi.mock("@/lib/api", () => import("../test/tauri-mock"));
 vi.mock("@tauri-apps/api/event", () => ({
   listen: vi.fn(async () => () => {}),
 }));

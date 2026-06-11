@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
@@ -18,6 +19,18 @@ pub struct AppConfig {
     pub agent: String,
     #[serde(default)]
     pub context_window: Option<u64>,
+    /// Route prompts through the Agent Client Protocol when the agent
+    /// supports it (falls back to the legacy flag-based harness).
+    #[serde(default = "default_true")]
+    pub acp_enabled: bool,
+    /// Auto-approve ACP permission requests instead of rejecting them.
+    #[serde(default)]
+    pub acp_auto_approve: bool,
+    /// Per-agent ACP launch command overrides, e.g.
+    /// { "antigravity": "agy --acp" }. Whitespace-split; first token is the
+    /// binary.
+    #[serde(default)]
+    pub acp_launch_overrides: HashMap<String, String>,
 }
 
 impl Default for AppConfig {
@@ -29,8 +42,15 @@ impl Default for AppConfig {
             active_project: String::new(),
             agent: "hermes".to_string(),
             context_window: None,
+            acp_enabled: true,
+            acp_auto_approve: false,
+            acp_launch_overrides: HashMap::new(),
         }
     }
+}
+
+fn default_true() -> bool {
+    true
 }
 
 fn default_gateway_url() -> String {
@@ -83,4 +103,35 @@ pub fn save_config(config: AppConfig) -> Result<(), String> {
 
     let json = serde_json::to_string_pretty(&config).map_err(|error| error.to_string())?;
     fs::write(dir.join("config.json"), json).map_err(|error| error.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn legacy_config_without_acp_fields_gets_defaults() {
+        let config: AppConfig =
+            serde_json::from_str(r#"{ "agent": "claude" }"#).expect("parse");
+        assert!(config.acp_enabled, "ACP should default ON");
+        assert!(!config.acp_auto_approve, "auto-approve should default OFF");
+        assert!(config.acp_launch_overrides.is_empty());
+        assert_eq!(config.agent, "claude");
+    }
+
+    #[test]
+    fn acp_fields_round_trip() {
+        let mut config = AppConfig::default();
+        config.acp_enabled = false;
+        config.acp_auto_approve = true;
+        config
+            .acp_launch_overrides
+            .insert("antigravity".to_string(), "agy --acp".to_string());
+
+        let json = serde_json::to_string(&config).expect("serialize");
+        let parsed: AppConfig = serde_json::from_str(&json).expect("parse");
+        assert!(!parsed.acp_enabled);
+        assert!(parsed.acp_auto_approve);
+        assert_eq!(parsed.acp_launch_overrides["antigravity"], "agy --acp");
+    }
 }

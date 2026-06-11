@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { invoke } from "@/lib/api";
+import { buildCommandList, matchSlashCommands } from "@/lib/slash-commands";
 
 export function Composer({
   pendingContextPath,
@@ -14,9 +15,32 @@ export function Composer({
   activeModel,
   onModelChange,
   models = [],
+  skills = [],
 }) {
   const [text, setText] = useState("");
   const [dragOver, setDragOver] = useState(false);
+  const [menuDismissed, setMenuDismissed] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const commands = useMemo(() => buildCommandList(skills), [skills]);
+  const matches = useMemo(
+    () => matchSlashCommands(text, commands),
+    [text, commands],
+  );
+  const menuOpen =
+    !menuDismissed && !isStreaming && Array.isArray(matches) && matches.length > 0;
+  const highlightedIndex = Math.min(selectedIndex, (matches?.length ?? 1) - 1);
+
+  const handleTextChange = (value) => {
+    setText(value);
+    setMenuDismissed(false);
+    setSelectedIndex(0);
+  };
+
+  const selectCommand = (command) => {
+    setText(`/${command.name} `);
+    setSelectedIndex(0);
+  };
 
   const handleSubmit = () => {
     const trimmed = text.trim();
@@ -46,6 +70,29 @@ export function Composer({
   };
 
   const handleKeyDown = (event) => {
+    if (menuOpen) {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setSelectedIndex((highlightedIndex + 1) % matches.length);
+        return;
+      }
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setSelectedIndex((highlightedIndex - 1 + matches.length) % matches.length);
+        return;
+      }
+      if (event.key === "Enter" || event.key === "Tab") {
+        event.preventDefault();
+        selectCommand(matches[highlightedIndex]);
+        return;
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setMenuDismissed(true);
+        return;
+      }
+    }
+
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       handleSubmit();
@@ -103,17 +150,47 @@ export function Composer({
         </div>
       ) : null}
 
-      {/* Input */}
-      <textarea
-        className="h-24 w-full resize-none rounded-xl border border-border bg-canvas px-4 py-3 text-sm text-text outline-none placeholder:text-muted focus:border-accent/50 disabled:opacity-50"
-        placeholder={
-          isStreaming ? "Agent is thinking…" : "Message your agent… (Shift+Enter for new line)"
-        }
-        disabled={isStreaming}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={handleKeyDown}
-      />
+      {/* Input + slash-command menu */}
+      <div className="relative">
+        {menuOpen ? (
+          <ul
+            role="listbox"
+            aria-label="Slash commands"
+            className="absolute bottom-full left-0 z-10 mb-1 max-h-56 w-full overflow-y-auto rounded-xl border border-border bg-canvas py-1 shadow-lg"
+          >
+            {matches.map((command, index) => (
+              <li
+                key={command.name}
+                role="option"
+                aria-selected={index === highlightedIndex}
+                className={`flex cursor-pointer items-baseline gap-2 px-4 py-1.5 text-sm ${
+                  index === highlightedIndex
+                    ? "bg-accent/10 text-accent"
+                    : "text-text hover:bg-accent/5"
+                }`}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => selectCommand(command)}
+                onMouseEnter={() => setSelectedIndex(index)}
+              >
+                <span className="font-mono">/{command.name}</span>
+                <span className="truncate text-xs text-muted">
+                  {command.description}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <textarea
+          className="h-24 w-full resize-none rounded-xl border border-border bg-canvas px-4 py-3 text-sm text-text outline-none placeholder:text-muted focus:border-accent/50 disabled:opacity-50"
+          placeholder={
+            isStreaming ? "Agent is thinking…" : "Message your agent… (Shift+Enter for new line)"
+          }
+          disabled={isStreaming}
+          value={text}
+          onChange={(e) => handleTextChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+        />
+      </div>
 
       {/* Agent + Model info + send button */}
       <div className="mt-2 flex items-center justify-between">

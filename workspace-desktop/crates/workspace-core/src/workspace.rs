@@ -243,7 +243,43 @@ pub fn build_context_prefix(ctx: &WorkspaceContext) -> String {
         prefix.push_str("\n\n");
     }
 
+    if !ctx.available_skills.is_empty() {
+        prefix.push_str("<!-- SKILLS -->\n");
+        prefix.push_str(
+            "The following skills are available. When the user invokes one \
+             (e.g. \"/name\") or it clearly applies, read its SKILL.md file \
+             and follow the instructions in it.\n",
+        );
+        for skill in &ctx.available_skills {
+            let description = if skill.description.is_empty() {
+                "(no description)"
+            } else {
+                &skill.description
+            };
+            prefix.push_str(&format!(
+                "- {} — {} — {}/SKILL.md\n",
+                skill.name, description, skill.path
+            ));
+        }
+        prefix.push('\n');
+    }
+
     prefix
+}
+
+/// Skills to advertise in the prompt manifest. Project-scoped skills take
+/// priority: if the project has any skills scoped to it, only those are
+/// listed (so unscoped skills don't consume context tokens). Without a
+/// project, or when nothing is scoped, fall back to the global set.
+pub fn skills_for_prompt(project_dir: Option<&str>) -> Vec<SkillInfo> {
+    if let Some(dir) = project_dir {
+        let mut scoped = Vec::new();
+        collect_skills(&project_root(dir).join("skills"), &mut scoped);
+        if !scoped.is_empty() {
+            return scoped;
+        }
+    }
+    list_global_skills()
 }
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -305,6 +341,100 @@ fn parse_skill_description(path: &Path) -> String {
     }
 
     String::new()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn skill(name: &str, description: &str, path: &str) -> SkillInfo {
+        SkillInfo {
+            name: name.to_string(),
+            description: description.to_string(),
+            path: path.to_string(),
+            is_symlink: false,
+        }
+    }
+
+    #[test]
+    fn prefix_is_empty_for_empty_context() {
+        let ctx = WorkspaceContext::default();
+        assert_eq!(build_context_prefix(&ctx), "");
+    }
+
+    #[test]
+    fn prefix_includes_soul_and_os_sections() {
+        let ctx = WorkspaceContext {
+            soul: "be kind".to_string(),
+            os: "use tdd".to_string(),
+            available_skills: Vec::new(),
+        };
+        let prefix = build_context_prefix(&ctx);
+        assert!(prefix.contains("<!-- SOUL -->\nbe kind"));
+        assert!(prefix.contains("<!-- OS -->\nuse tdd"));
+    }
+
+    #[test]
+    fn prefix_lists_each_skill_with_name_description_and_path() {
+        let ctx = WorkspaceContext {
+            soul: String::new(),
+            os: String::new(),
+            available_skills: vec![
+                skill("weekly-report", "Build the weekly report", "/ws/skills/weekly-report"),
+                skill("retro", "", "/ws/skills/retro"),
+            ],
+        };
+        let prefix = build_context_prefix(&ctx);
+        assert!(prefix.contains("<!-- SKILLS -->"));
+        assert!(prefix.contains("weekly-report"));
+        assert!(prefix.contains("Build the weekly report"));
+        assert!(prefix.contains("/ws/skills/weekly-report/SKILL.md"));
+        assert!(prefix.contains("/ws/skills/retro/SKILL.md"));
+        // The agent must be told to read the file on demand, not given its body.
+        assert!(prefix.to_lowercase().contains("read"));
+    }
+
+    #[test]
+    fn prefix_omits_skills_section_when_no_skills() {
+        let ctx = WorkspaceContext {
+            soul: "be kind".to_string(),
+            os: String::new(),
+            available_skills: Vec::new(),
+        };
+        assert!(!build_context_prefix(&ctx).contains("<!-- SKILLS -->"));
+    }
+
+    fn make_skill_dir(root: &Path, name: &str, description: &str) {
+        let dir = root.join(name);
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("SKILL.md"),
+            format!("---\nname: {name}\ndescription: {description}\n---\n\n# {name}\n"),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn skills_for_prompt_uses_only_project_scoped_skills_when_present() {
+        let project = std::env::temp_dir().join(format!(
+            "workspace-core-test-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let skills_dir = project.join(".workspace").join("skills");
+        make_skill_dir(&skills_dir, "scoped-skill", "A scoped skill");
+
+        let skills = skills_for_prompt(Some(project.to_str().unwrap()));
+
+        std::fs::remove_dir_all(&project).ok();
+
+        assert_eq!(skills.len(), 1);
+        assert_eq!(skills[0].name, "scoped-skill");
+        assert_eq!(skills[0].description, "A scoped skill");
+    }
 }
 
 // ── Templates ────────────────────────────────────────────────

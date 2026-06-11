@@ -404,3 +404,54 @@ Tauri shell + TUI Gateway JSON-RPC + SQLite session reads + file tree + project 
 - Markdown Flight Cards for structured tool dispatch
 - Single `orca_dispatch` tool exposed to Hermes (context window protection)
 - See: `rust-orca` PRD
+
+## 11. ACP Harness (Agent Client Protocol)
+
+As of STORY-0008…0011, prompts to ACP-capable agents go through the Agent
+Client Protocol (agentclientprotocol.com) instead of per-CLI flags and
+stdout scraping.
+
+### Routing rule
+
+`send_prompt` (workspace-core `harness.rs`) consults `harness_acp::route`:
+
+- `config.acp_enabled` (default ON) **and** the agent has an ACP launch
+  profile → spawn/reuse a long-lived agent process, speak newline-delimited
+  JSON-RPC 2.0 (initialize → session/new|load → session/prompt).
+- ACP launch/handshake failure (`AcpError::Unavailable`) → silent fallback
+  to the legacy flag-based harness for that agent.
+- ACP prompt failure after a successful handshake (`AcpError::Failed`) →
+  surfaced to the user, never silently retried on the legacy path.
+- Agents without ACP support (hermes, ollama, pi, aider, amp) always use
+  their legacy harness.
+
+### Launch profiles
+
+Defaults (overridable per agent via `config.acp_launch_overrides`):
+
+| agent  | launch                       | model                  |
+|--------|------------------------------|------------------------|
+| claude | `claude-agent-acp`           | `ANTHROPIC_MODEL` env  |
+| gemini | `gemini --experimental-acp`  | `-m <model>`           |
+| codex  | `codex-acp`                  | agent default          |
+| goose  | `goose acp`                  | agent default          |
+
+`antigravity` (`agy`) has no default until its ACP support is verified —
+add an override like `{ "antigravity": "agy --acp" }`.
+
+### Sessions and permissions
+
+- ACP agent processes are owned by a global `SessionManager`
+  (workspace-core `acp_sessions.rs`), keyed by the agent-issued session id,
+  and reused across prompts. Dead processes are reaped on access; agents
+  advertising `loadSession` get their session replayed after a respawn.
+- `session/request_permission` is answered by policy:
+  reject (default) or allow-all when `config.acp_auto_approve` is set.
+  Surfacing these in the UI (reviving `approval-card.jsx`) is a follow-up,
+  as is streaming `session/update` chunks into the chat.
+
+### Module map
+
+- `acp.rs` — protocol client (transport-agnostic, tested over pipes)
+- `acp_sessions.rs` — process lifecycle + session reuse
+- `harness_acp.rs` — launch profiles, routing, legacy fallback

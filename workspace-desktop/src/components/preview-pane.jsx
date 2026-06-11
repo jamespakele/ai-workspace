@@ -13,6 +13,30 @@ async function convertFileSrc(path) {
   return `/api/fs/file?path=${encodeURIComponent(path)}`;
 }
 
+// convertFileSrc is async (Tauri's variant is loaded lazily), so the URL
+// must be resolved into state rather than passed to src directly.
+function useFileSrc(path, enabled) {
+  const [src, setSrc] = useState(null);
+
+  useEffect(() => {
+    if (!enabled) {
+      return undefined;
+    }
+    let cancelled = false;
+    setSrc(null);
+    convertFileSrc(path).then((url) => {
+      if (!cancelled) {
+        setSrc(url);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [path, enabled]);
+
+  return src;
+}
+
 import { Markdown } from "./markdown";
 
 const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico"]);
@@ -30,6 +54,7 @@ export function PreviewPane({ path, onClose }) {
   const extension = extensionOf(path);
   const isImage = IMAGE_EXTENSIONS.has(extension);
   const canPreview = PREVIEWABLE.has(extension);
+  const imageSrc = useFileSrc(path, isImage);
 
   // Reset to preview mode when file changes
   useEffect(() => {
@@ -123,9 +148,9 @@ export function PreviewPane({ path, onClose }) {
           <p className="text-sm text-red-400">{state.error}</p>
         ) : null}
 
-        {state.status === "ready" && isImage ? (
+        {state.status === "ready" && isImage && imageSrc ? (
           <img
-            src={convertFileSrc(path)}
+            src={imageSrc}
             alt={path.split(/[\\/]/).at(-1)}
             className="max-w-full rounded-lg"
           />

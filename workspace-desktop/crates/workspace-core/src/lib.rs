@@ -1,7 +1,10 @@
+pub mod acp;
+pub mod acp_sessions;
 pub mod config;
 pub mod discovery;
 pub mod fs;
 pub mod harness;
+pub mod harness_acp;
 pub mod harness_antigravity;
 pub mod harness_claude;
 pub mod harness_codex;

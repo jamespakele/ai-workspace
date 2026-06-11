@@ -2,7 +2,7 @@ use serde::Serialize;
 use std::process::Command;
 
 /// Response from any agent harness.
-#[derive(Clone, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct ChatResponse {
     pub session_id: String,
     pub response: String,
@@ -65,8 +65,11 @@ pub fn send_prompt(
         return Err("Prompt text is empty".to_string());
     }
 
-    // Load workspace context and prepend soul + os to the prompt.
-    let workspace_ctx = crate::workspace::load_workspace(cwd.clone());
+    // Load workspace context and prepend soul + os + skills manifest to the
+    // prompt. The manifest only advertises name/description/path per skill;
+    // agents read SKILL.md on demand instead of carrying full bodies in context.
+    let mut workspace_ctx = crate::workspace::load_workspace(cwd.clone());
+    workspace_ctx.available_skills = crate::workspace::skills_for_prompt(cwd.as_deref());
     let prefix = crate::workspace::build_context_prefix(&workspace_ctx);
     let full_prompt = if prefix.is_empty() {
         text
@@ -78,6 +81,38 @@ pub fn send_prompt(
         .filter(|s| !s.is_empty())
         .unwrap_or("hermes");
 
+    // ACP first: agents that speak the Agent Client Protocol go through the
+    // standardized harness; legacy flag-based harnesses remain the fallback
+    // when the ACP agent can't be launched on this machine.
+    let app_config = crate::config::get_config().unwrap_or_default();
+    if let crate::harness_acp::Route::Acp(profile) =
+        crate::harness_acp::route(agent_name, &app_config, model.as_deref())
+    {
+        let acp_result = crate::harness_acp::send(
+            agent_name,
+            &profile,
+            &app_config,
+            full_prompt.clone(),
+            session_id.clone(),
+            cwd.clone(),
+        );
+        return crate::harness_acp::resolve_acp_result(acp_result, || {
+            dispatch_legacy(agent_name, hermes_bin, full_prompt, session_id, cwd, model)
+        });
+    }
+
+    dispatch_legacy(agent_name, hermes_bin, full_prompt, session_id, cwd, model)
+}
+
+/// The pre-ACP, flag-based harness dispatch.
+fn dispatch_legacy(
+    agent_name: &str,
+    hermes_bin: Option<String>,
+    full_prompt: String,
+    session_id: Option<String>,
+    cwd: Option<String>,
+    model: Option<String>,
+) -> Result<ChatResponse, String> {
     match agent_name {
         "hermes" => crate::harness_hermes::send(hermes_bin, full_prompt, session_id, cwd, model),
         "claude" => crate::harness_claude::send(full_prompt, session_id, cwd, model),
