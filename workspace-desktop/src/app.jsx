@@ -16,7 +16,7 @@ const MAX_SIDEBAR_WIDTH = 480;
 const DEFAULT_SIDEBAR_WIDTH = 260;
 
 const MIN_PREVIEW_WIDTH = 260;
-const MAX_PREVIEW_WIDTH = 640;
+const MAX_PREVIEW_WIDTH_RATIO = 0.9;
 const DEFAULT_PREVIEW_WIDTH = 380;
 
 /**
@@ -71,13 +71,24 @@ export default function App() {
 
   // Load models and default model on mount and when agent changes
   useEffect(() => {
-    invoke("list_models")
-      .then((result) => setModels(result || []))
+    // Reset model selection when agent changes
+    setActiveModel("");
+    setModels([]);
+
+    invoke("list_models", { agent: activeAgent })
+      .then((result) => {
+        const list = result || [];
+        setModels(list);
+        // Auto-select first model if available
+        if (list.length > 0) {
+          setActiveModel(list[0]);
+        }
+      })
       .catch((err) => console.warn("list_models failed:", err));
 
     invoke("get_default_model")
       .then((result) => {
-        if (result && !activeModel) {
+        if (result) {
           setActiveModel(result);
         }
       })
@@ -99,8 +110,9 @@ export default function App() {
         const newWidth = Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, e.clientX));
         setSidebarWidth(newWidth);
       } else if (resizingRef.current.panel === "preview") {
+        const maxPreview = Math.floor(window.innerWidth * MAX_PREVIEW_WIDTH_RATIO);
         const newWidth = Math.min(
-          MAX_PREVIEW_WIDTH,
+          maxPreview,
           Math.max(MIN_PREVIEW_WIDTH, window.innerWidth - e.clientX),
         );
         setPreviewWidth(newWidth);
@@ -255,6 +267,7 @@ export default function App() {
             onUserMessage={(message) =>
               setMessages((previous) => [...previous, message])
             }
+            onAddToContext={(path) => setPendingContextPath(path)}
             agents={agents}
             activeAgent={activeAgent}
             onAgentChange={handleAgentChange}

@@ -25,6 +25,7 @@ pub fn discover_agents() -> Vec<AgentInfo> {
         ("gemini",       &["gemini"]),
         ("codex",        &["codex"]),
         ("antigravity",  &["agy", "antigravity"]),
+        ("ollama",       &["ollama"]),
         ("pi",           &["pi"]),
         ("aider",        &["aider"]),
         ("goose",        &["goose"]),
@@ -84,6 +85,7 @@ pub fn send_prompt(
         "codex" => crate::harness_codex::send(full_prompt, session_id, cwd, model),
         "antigravity" => crate::harness_antigravity::send(full_prompt, session_id, cwd, model),
         "pi" => crate::harness_pi::send(full_prompt, session_id, cwd),
+        "ollama" => crate::harness_ollama::send(full_prompt, session_id, cwd, model),
         // Generic agents: aider, goose, amp, and future additions
         "aider" | "goose" | "amp" => {
             crate::harness_generic::send(agent_name, agent_name, full_prompt, session_id, cwd, model)
@@ -335,4 +337,38 @@ pub fn get_default_model() -> Option<String> {
     }
 
     None
+}
+
+/// Return models appropriate for a given agent.
+/// Falls back to the generic Hermes/OpenRouter cache for unknown agents.
+pub fn list_models_for_agent(agent: &str) -> Vec<String> {
+    match agent {
+        "hermes" => list_models(),
+        "ollama" => crate::harness_ollama::list_ollama_models(),
+        "claude" => vec![
+            "claude-sonnet-4-20250514".to_string(),
+            "claude-opus-4-20250514".to_string(),
+            "claude-haiku-35-20241022".to_string(),
+        ],
+        "gemini" => vec![
+            "gemini-2.5-pro".to_string(),
+            "gemini-2.5-flash".to_string(),
+            "gemini-2.0-flash".to_string(),
+        ],
+        "antigravity" => vec![
+            "gemini-2.5-pro".to_string(),
+            "gemini-2.5-flash".to_string(),
+            "claude-sonnet-4-20250514".to_string(),
+        ],
+        "codex" => vec![
+            "codex-mini".to_string(),
+            "o4-mini".to_string(),
+            "o3".to_string(),
+        ],
+        // Generic / unknown agents: return OpenRouter cache if available, else empty
+        _ => {
+            let models = list_models();
+            if models.is_empty() { Vec::new() } else { models }
+        }
+    }
 }

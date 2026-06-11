@@ -65,21 +65,18 @@ export function useFileTree(rootPath) {
         return;
       }
 
-      let shouldFetch = false;
-
       setExpanded((current) => {
         const next = new Set(current);
         if (next.has(path)) {
           next.delete(path);
           return next;
         }
-
         next.add(path);
-        shouldFetch = !cacheRef.current[path];
         return next;
       });
 
-      if (shouldFetch) {
+      // Check cache ref directly — avoids React 18 batching race
+      if (!cacheRef.current[path]) {
         void fetchChildren(path);
       }
     },

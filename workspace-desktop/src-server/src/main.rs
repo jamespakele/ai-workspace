@@ -1,4 +1,5 @@
 use axum::{
+    extract::Query,
     http::StatusCode,
     response::{IntoResponse, Json},
     routing::{delete, get, post},
@@ -46,6 +47,11 @@ struct InstallRequest {
     file_path: String,
 }
 
+#[derive(Deserialize)]
+struct AgentQuery {
+    agent: Option<String>,
+}
+
 // ── Helpers ──────────────────────────────────────────────────
 
 fn err_to_response(e: String) -> (StatusCode, String) {
@@ -79,8 +85,9 @@ async fn handle_discover_agents() -> impl IntoResponse {
     Json(workspace_core::harness::discover_agents())
 }
 
-async fn handle_list_models() -> impl IntoResponse {
-    Json(workspace_core::harness::list_models())
+async fn handle_list_models(Query(q): Query<AgentQuery>) -> impl IntoResponse {
+    let agent = q.agent.as_deref().unwrap_or("hermes");
+    Json(workspace_core::harness::list_models_for_agent(agent))
 }
 
 async fn handle_get_default_model() -> impl IntoResponse {

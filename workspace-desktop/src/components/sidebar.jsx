@@ -35,10 +35,16 @@ function FileTreeNode({
     <div>
       <button
         type="button"
+        draggable
         onClick={() =>
           entry.is_dir ? toggleExpanded(entry.path) : onOpenFile?.(entry.path)
         }
         onContextMenu={(event) => openContextMenu(event, entry)}
+        onDragStart={(e) => {
+          e.dataTransfer.setData("application/x-workspace-file", entry.path);
+          e.dataTransfer.setData("text/plain", entry.path);
+          e.dataTransfer.effectAllowed = "copy";
+        }}
         className="flex w-full items-center gap-2 rounded-lg py-1 pr-2 text-left transition hover:bg-panel/70"
         style={{ paddingLeft: `${depth * 12 + 12}px` }}
       >
@@ -211,7 +217,7 @@ export function Sidebar({
 
   return (
     <aside
-      className="flex shrink-0 flex-col border-r border-border bg-sidebar"
+      className="relative flex shrink-0 flex-col border-r border-border bg-sidebar"
       style={{ width: `${width}px` }}
     >
       {/* Project header */}

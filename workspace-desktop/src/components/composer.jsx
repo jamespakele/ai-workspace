@@ -7,6 +7,7 @@ export function Composer({
   isStreaming,
   onSendPrompt,
   onUserMessage,
+  onAddToContext,
   agents = [],
   activeAgent,
   onAgentChange,
@@ -15,6 +16,7 @@ export function Composer({
   models = [],
 }) {
   const [text, setText] = useState("");
+  const [dragOver, setDragOver] = useState(false);
 
   const handleSubmit = () => {
     const trimmed = text.trim();
@@ -57,7 +59,36 @@ export function Composer({
   };
 
   return (
-    <div className="border-t border-border bg-sidebar px-6 py-4">
+    <div
+      className={`border-t border-border bg-sidebar px-6 py-4 transition-colors ${dragOver ? "ring-2 ring-inset ring-accent/50 bg-accent/5" : ""}`}
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes("application/x-workspace-file")) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "copy";
+          setDragOver(true);
+        }
+      }}
+      onDragEnter={(e) => {
+        if (e.dataTransfer.types.includes("application/x-workspace-file")) {
+          e.preventDefault();
+          setDragOver(true);
+        }
+      }}
+      onDragLeave={(e) => {
+        // Only set false when leaving the container (not entering a child)
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+          setDragOver(false);
+        }
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragOver(false);
+        const filePath = e.dataTransfer.getData("application/x-workspace-file");
+        if (filePath) {
+          onAddToContext?.(filePath);
+        }
+      }}
+    >
       {/* Context badge */}
       {pendingContextPath ? (
         <div className="mb-2 flex items-center gap-2 rounded-lg bg-accent/10 px-3 py-1.5 text-xs text-accent">

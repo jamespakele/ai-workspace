@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { Composer } from "./composer";
@@ -9,14 +9,18 @@ function renderComposer(overrides = {}) {
     pendingContextPath: null,
     onContextInjected: vi.fn(),
     isStreaming: false,
-    send: vi.fn(),
-    activeSessionId: "sess-1",
+    onSendPrompt: vi.fn(),
     onUserMessage: vi.fn(),
-    mode: "ask",
-    onModeChange: vi.fn(),
-    skills: [],
-    onCompact: vi.fn(),
-    onOpenSchedule: vi.fn(),
+    onAddToContext: vi.fn(),
+    agents: [
+      { name: "hermes", binary: "/usr/bin/hermes", version: "1.0" },
+      { name: "ollama", binary: "/usr/bin/ollama", version: "0.30" },
+    ],
+    activeAgent: "hermes",
+    onAgentChange: vi.fn(),
+    activeModel: "deepseek/deepseek-v4-flash",
+    onModelChange: vi.fn(),
+    models: ["deepseek/deepseek-v4-flash", "anthropic/claude-sonnet-4"],
     ...overrides,
   };
 
@@ -25,90 +29,65 @@ function renderComposer(overrides = {}) {
 }
 
 describe("Composer", () => {
-  it("submits prompts with the selected permission mode", async () => {
-    const props = renderComposer({ mode: "auto" });
+  it("submits prompt on Enter", async () => {
+    const props = renderComposer();
 
-    await userEvent.type(screen.getByRole("textbox"), "summarize the folder");
-    await userEvent.click(screen.getByRole("button", { name: "Send" }));
+    await userEvent.type(screen.getByRole("textbox"), "hello world");
+    await userEvent.keyboard("{Enter}");
 
-    expect(props.send).toHaveBeenCalledWith("prompt.submit", {
-      text: "summarize the folder",
-      session_id: "sess-1",
-      mode: "auto",
-    });
     expect(props.onUserMessage).toHaveBeenCalled();
+    expect(props.onSendPrompt).toHaveBeenCalledWith("hello world");
   });
 
-  it("steers instead of submitting while streaming", async () => {
-    const props = renderComposer({ isStreaming: true });
-
-    await userEvent.type(screen.getByRole("textbox"), "skip the appendix");
-    await userEvent.click(screen.getByRole("button", { name: "Steer" }));
-
-    expect(props.send).toHaveBeenCalledWith("prompt.steer", {
-      text: "skip the appendix",
-      session_id: "sess-1",
-    });
+  it("disables input while streaming", () => {
+    renderComposer({ isStreaming: true });
+    expect(screen.getByRole("textbox")).toBeDisabled();
   });
 
-  it("shows a stop button while streaming that cancels the prompt", async () => {
-    const props = renderComposer({ isStreaming: true });
-
-    await userEvent.click(screen.getByRole("button", { name: "Stop" }));
-    expect(props.send).toHaveBeenCalledWith("prompt.cancel", {
-      session_id: "sess-1",
-    });
+  it("shows context badge when pendingContextPath is set", () => {
+    renderComposer({ pendingContextPath: "/proj/src/main.rs" });
+    expect(screen.getByText(/main\.rs/)).toBeInTheDocument();
   });
 
-  it("hides the stop button when idle", () => {
-    renderComposer({ isStreaming: false });
-    expect(screen.queryByRole("button", { name: "Stop" })).not.toBeInTheDocument();
-  });
-
-  it("opens the slash menu on / and filters by prefix", async () => {
-    renderComposer({ skills: [{ name: "weekly-report" }] });
-
-    await userEvent.type(screen.getByRole("textbox"), "/");
-    expect(screen.getByTestId("slash-menu")).toBeInTheDocument();
-    expect(screen.getByText("/compact")).toBeInTheDocument();
-    expect(screen.getByText("/weekly-report")).toBeInTheDocument();
-
-    await userEvent.type(screen.getByRole("textbox"), "we");
-    expect(screen.queryByText("/compact")).not.toBeInTheDocument();
-    expect(screen.getByText("/weekly-report")).toBeInTheDocument();
-  });
-
-  it("runs /compact via the menu", async () => {
+  it("accepts drag-and-drop of workspace files", () => {
     const props = renderComposer();
 
-    await userEvent.type(screen.getByRole("textbox"), "/com");
-    await userEvent.click(screen.getByText("/compact"));
+    // The outermost <div> in Composer has the drop handlers
+    // It's the container with the border-t class
+    const dropTarget = screen.getByRole("textbox").closest(
+      "[class*='border-t']",
+    );
 
-    expect(props.onCompact).toHaveBeenCalled();
-    expect(screen.getByRole("textbox")).toHaveValue("");
+    // Build a mock data store like DataTransfer
+    const data = { "application/x-workspace-file": "/proj/readme.md" };
+    const dataTransfer = {
+      types: Object.keys(data),
+      getData: (type) => data[type] ?? "",
+      dropEffect: "none",
+    };
+
+    fireEvent.dragOver(dropTarget, { dataTransfer });
+    fireEvent.drop(dropTarget, { dataTransfer });
+
+    expect(props.onAddToContext).toHaveBeenCalledWith("/proj/readme.md");
   });
 
-  it("runs /schedule typed directly", async () => {
-    const props = renderComposer();
-
-    await userEvent.type(screen.getByRole("textbox"), "/schedule{Enter}");
-    expect(props.onOpenSchedule).toHaveBeenCalled();
-    expect(props.send).not.toHaveBeenCalled();
+  it("renders agent selector with all agents", () => {
+    renderComposer();
+    const select = screen.getAllByRole("combobox")[0];
+    expect(select).toBeInTheDocument();
+    // Should have hermes and ollama options
+    const options = select.querySelectorAll("option");
+    expect(options).toHaveLength(2);
+    expect(options[0].textContent).toBe("hermes");
+    expect(options[1].textContent).toBe("ollama");
   });
 
-  it("completes skill commands into the input", async () => {
-    renderComposer({ skills: [{ name: "weekly-report" }] });
-
-    await userEvent.type(screen.getByRole("textbox"), "/wee");
-    await userEvent.click(screen.getByText("/weekly-report"));
-
-    expect(screen.getByRole("textbox")).toHaveValue("/weekly-report ");
-  });
-
-  it("changes permission mode from the selector", async () => {
-    const props = renderComposer();
-
-    await userEvent.click(screen.getByRole("radio", { name: "Auto" }));
-    expect(props.onModeChange).toHaveBeenCalledWith("auto");
+  it("renders model selector with model list", () => {
+    renderComposer();
+    const selects = screen.getAllByRole("combobox");
+    const modelSelect = selects[1];
+    const options = modelSelect.querySelectorAll("option");
+    expect(options).toHaveLength(2);
   });
 });

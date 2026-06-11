@@ -8,6 +8,7 @@ pub mod harness_codex;
 pub mod harness_gemini;
 pub mod harness_generic;
 pub mod harness_hermes;
+pub mod harness_ollama;
 pub mod harness_pi;
 pub mod mcp;
 pub mod projects;
