@@ -4,6 +4,7 @@ use crate::harness::{ChatResponse, clean_output};
 /// OpenAI Codex CLI — coding agent.
 /// Non-interactive: `codex exec "text"`
 /// Model override: `codex exec -m <model> "text"`
+/// Working dir: `codex exec -C <dir> "text"`
 /// Resume: `codex exec resume --last`
 pub fn send(
     text: String,
@@ -14,8 +15,9 @@ pub fn send(
     let bin = "codex";
 
     let mut cmd = Command::new(bin);
-    cmd.args(["exec", &text]);
+    cmd.arg("exec");
 
+    // Flags must come before the prompt argument
     if let Some(m) = &model {
         if !m.is_empty() {
             cmd.args(["-m", m]);
@@ -24,9 +26,15 @@ pub fn send(
 
     if let Some(dir) = &cwd {
         if !dir.is_empty() {
-            cmd.current_dir(dir);
+            cmd.args(["-C", dir]);
         }
     }
+
+    // Allow running outside a git repository
+    cmd.arg("--skip-git-repo-check");
+
+    // Prompt is the final positional argument
+    cmd.arg(&text);
 
     let output = cmd.output().map_err(|error| {
         format!("Failed to run codex: {error}. Install: npm install -g @openai/codex")
@@ -54,9 +62,8 @@ pub fn send(
 /// model IDs that it accepts via the `-m` flag.
 pub fn list_models() -> Vec<String> {
     vec![
-        "codex-mini".to_string(),
         "o4-mini".to_string(),
         "o3".to_string(),
+        "codex-mini".to_string(),
     ]
 }
-
