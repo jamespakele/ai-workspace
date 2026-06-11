@@ -274,9 +274,16 @@ export function SettingsPanel({ open, onClose }) {
     };
   }, [open]);
 
+  const CHECKBOX_FIELDS = new Set([
+    "auto_start_gateway",
+    "acp_enabled",
+    "acp_auto_approve",
+  ]);
+
   const handleChange = (field) => (event) => {
-    const value =
-      field === "auto_start_gateway" ? event.target.checked : event.target.value;
+    const value = CHECKBOX_FIELDS.has(field)
+      ? event.target.checked
+      : event.target.value;
 
     setForm((current) => ({
       ...current,
@@ -427,6 +434,42 @@ export function SettingsPanel({ open, onClose }) {
                 type="checkbox"
                 checked={Boolean(form.auto_start_gateway)}
                 onChange={handleChange("auto_start_gateway")}
+                className="h-4 w-4 rounded border-border bg-canvas text-accent"
+              />
+            </label>
+
+            <label className="flex items-center justify-between gap-4 rounded-xl border border-border bg-canvas px-3 py-3">
+              <span>
+                <span className="block text-sm font-medium text-text">
+                  Use Agent Client Protocol (ACP)
+                </span>
+                <span className="mt-1 block text-xs text-muted">
+                  Drive ACP-capable agents (claude, gemini, codex, goose) over
+                  the standardized protocol; others fall back automatically.
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={Boolean(form.acp_enabled)}
+                onChange={handleChange("acp_enabled")}
+                className="h-4 w-4 rounded border-border bg-canvas text-accent"
+              />
+            </label>
+
+            <label className="flex items-center justify-between gap-4 rounded-xl border border-border bg-canvas px-3 py-3">
+              <span>
+                <span className="block text-sm font-medium text-text">
+                  Auto-approve ACP permission requests
+                </span>
+                <span className="mt-1 block text-xs text-muted">
+                  When off, agents' tool permission requests are rejected —
+                  the safe default for unattended prompts.
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={Boolean(form.acp_auto_approve)}
+                onChange={handleChange("acp_auto_approve")}
                 className="h-4 w-4 rounded border-border bg-canvas text-accent"
               />
             </label>
