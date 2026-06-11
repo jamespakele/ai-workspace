@@ -57,13 +57,35 @@ pub fn send(
     })
 }
 
-/// List available Codex models.
-/// The Codex CLI doesn't have a `models` subcommand, so we return the known
-/// model IDs that it accepts via the `-m` flag.
+/// List available Codex models by reading ~/.codex/models_cache.json.
+/// Each model entry has a "slug" field (e.g. "gpt-5.5", "gpt-5.4-mini").
+/// Falls back to a sensible default if the cache can't be read.
 pub fn list_models() -> Vec<String> {
-    vec![
-        "o4-mini".to_string(),
-        "o3".to_string(),
-        "codex-mini".to_string(),
-    ]
+    if let Some(models) = read_models_cache() {
+        if !models.is_empty() {
+            return models;
+        }
+    }
+    // Fallback when cache is missing
+    vec!["gpt-5.5".to_string()]
 }
+
+fn read_models_cache() -> Option<Vec<String>> {
+    let cache_path = dirs::home_dir()?.join(".codex").join("models_cache.json");
+    let contents = std::fs::read_to_string(&cache_path).ok()?;
+    let parsed: serde_json::Value = serde_json::from_str(&contents).ok()?;
+
+    let models_arr = parsed.as_array()
+        .or_else(|| parsed.get("models").and_then(|m| m.as_array()))?;
+
+    let slugs: Vec<String> = models_arr
+        .iter()
+        .filter_map(|m| m.get("slug").and_then(|s| s.as_str()))
+        // Skip internal-only models like "codex-auto-review"
+        .filter(|s| !s.contains("auto-review"))
+        .map(|s| s.to_string())
+        .collect();
+
+    Some(slugs)
+}
+
