@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { Composer } from "./composer";
@@ -89,5 +89,88 @@ describe("Composer", () => {
     const modelSelect = selects[1];
     const options = modelSelect.querySelectorAll("option");
     expect(options).toHaveLength(2);
+  });
+});
+
+describe("Composer slash menu", () => {
+  const skills = [
+    { name: "weekly-report", trigger_phrases: ["weekly report"] },
+    { name: "retro", trigger_phrases: [] },
+  ];
+
+  it("opens the menu listing skills when '/' is typed", async () => {
+    renderComposer({ skills });
+
+    await userEvent.type(screen.getByRole("textbox"), "/");
+
+    const menu = screen.getByRole("listbox");
+    const items = within(menu).getAllByRole("option");
+    expect(menu).toBeInTheDocument();
+    const names = items.map((item) => item.textContent);
+    expect(names.join(" ")).toContain("weekly-report");
+    expect(names.join(" ")).toContain("retro");
+    expect(names.join(" ")).toContain("compact");
+  });
+
+  it("does not open the menu for plain text", async () => {
+    renderComposer({ skills });
+    await userEvent.type(screen.getByRole("textbox"), "hello");
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  });
+
+  it("filters commands as the user types", async () => {
+    renderComposer({ skills });
+
+    await userEvent.type(screen.getByRole("textbox"), "/wee");
+
+    const items = within(screen.getByRole("listbox")).getAllByRole("option");
+    expect(items).toHaveLength(1);
+    expect(items[0].textContent).toContain("weekly-report");
+  });
+
+  it("autocompletes on click without sending", async () => {
+    const props = renderComposer({ skills });
+    const textbox = screen.getByRole("textbox");
+
+    await userEvent.type(textbox, "/wee");
+    await userEvent.click(screen.getByRole("option", { name: /weekly-report/ }));
+
+    expect(textbox).toHaveValue("/weekly-report ");
+    expect(props.onSendPrompt).not.toHaveBeenCalled();
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  });
+
+  it("selects the highlighted command with Enter instead of sending", async () => {
+    const props = renderComposer({ skills });
+    const textbox = screen.getByRole("textbox");
+
+    await userEvent.type(textbox, "/wee");
+    await userEvent.keyboard("{Enter}");
+
+    expect(textbox).toHaveValue("/weekly-report ");
+    expect(props.onSendPrompt).not.toHaveBeenCalled();
+  });
+
+  it("navigates with arrow keys", async () => {
+    renderComposer({ skills });
+    const textbox = screen.getByRole("textbox");
+
+    await userEvent.type(textbox, "/");
+    await userEvent.keyboard("{ArrowDown}{Enter}");
+
+    // Second command in the list: built-ins come first (compact, schedule).
+    expect(textbox).toHaveValue("/schedule ");
+  });
+
+  it("closes the menu with Escape and lets Enter send again", async () => {
+    const props = renderComposer({ skills });
+    const textbox = screen.getByRole("textbox");
+
+    await userEvent.type(textbox, "/wee");
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+
+    await userEvent.keyboard("{Enter}");
+    expect(props.onSendPrompt).toHaveBeenCalledWith("/wee");
   });
 });

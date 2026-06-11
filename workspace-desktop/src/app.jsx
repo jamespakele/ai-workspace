@@ -10,6 +10,7 @@ import { PreviewPane } from "./components/preview-pane";
 import { useSessions } from "./hooks/useSessions";
 import { useAppConfig } from "./hooks/useAppConfig";
 import { useAgents } from "./hooks/useAgents";
+import { useSkills } from "./hooks/useSkills";
 
 const MIN_SIDEBAR_WIDTH = 180;
 const MAX_SIDEBAR_WIDTH = 480;
@@ -65,6 +66,7 @@ export default function App() {
   const { activeSessionId, setActiveSessionId, refresh } = useSessions();
   const { config, saveConfig } = useAppConfig();
   const { agents } = useAgents();
+  const { skills } = useSkills();
   const activeAgent = config?.agent ?? "hermes";
   const [activeModel, setActiveModel] = useState("");
   const [models, setModels] = useState([]);
@@ -266,6 +268,7 @@ export default function App() {
             activeModel={activeModel}
             onModelChange={setActiveModel}
             models={models}
+            skills={skills}
           />
         </main>
 

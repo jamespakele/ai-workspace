@@ -65,8 +65,11 @@ pub fn send_prompt(
         return Err("Prompt text is empty".to_string());
     }
 
-    // Load workspace context and prepend soul + os to the prompt.
-    let workspace_ctx = crate::workspace::load_workspace(cwd.clone());
+    // Load workspace context and prepend soul + os + skills manifest to the
+    // prompt. The manifest only advertises name/description/path per skill;
+    // agents read SKILL.md on demand instead of carrying full bodies in context.
+    let mut workspace_ctx = crate::workspace::load_workspace(cwd.clone());
+    workspace_ctx.available_skills = crate::workspace::skills_for_prompt(cwd.as_deref());
     let prefix = crate::workspace::build_context_prefix(&workspace_ctx);
     let full_prompt = if prefix.is_empty() {
         text
