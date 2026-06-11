@@ -12,12 +12,7 @@ pub fn send(
     cwd: Option<String>,
     model: Option<String>,
 ) -> Result<ChatResponse, String> {
-    // Try agy first, fall back to antigravity
-    let bin = if which_bin_pub("agy").is_some() {
-        "agy"
-    } else {
-        "antigravity"
-    };
+    let bin = resolve_bin();
 
     let mut cmd = Command::new(bin);
     cmd.args(["-p", &text]);
@@ -60,3 +55,27 @@ pub fn send(
         agent: "antigravity".to_string(),
     })
 }
+
+/// Query available models by running `agy models`.
+/// Parses lines like "Gemini 3.5 Flash (Medium)" from the CLI output.
+pub fn list_models() -> Vec<String> {
+    let bin = resolve_bin();
+
+    let output = match Command::new(bin).arg("models").output() {
+        Ok(o) if o.status.success() => o,
+        _ => return Vec::new(),
+    };
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    stdout
+        .lines()
+        .map(|l| l.trim())
+        .filter(|l| !l.is_empty() && !l.contains("Fetching"))
+        .map(|l| l.to_string())
+        .collect()
+}
+
+fn resolve_bin() -> &'static str {
+    if which_bin_pub("agy").is_some() { "agy" } else { "antigravity" }
+}
+

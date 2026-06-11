@@ -14,7 +14,7 @@ pub fn send(
         Some(m) if !m.is_empty() => m.clone(),
         _ => {
             // Pick the first installed model
-            let models = list_ollama_models();
+            let models = list_models();
             models.into_iter().next()
                 .ok_or_else(|| "No Ollama models installed. Run: ollama pull <model>".to_string())?
         }
@@ -56,7 +56,7 @@ pub fn send(
 
 /// List locally installed Ollama models by parsing `ollama list` output.
 /// Returns model names like ["gemma4:12b", "llama3:8b"].
-pub fn list_ollama_models() -> Vec<String> {
+pub fn list_models() -> Vec<String> {
     let output = match Command::new("ollama").arg("list").output() {
         Ok(o) if o.status.success() => o,
         _ => return Vec::new(),

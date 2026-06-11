@@ -69,7 +69,7 @@ export default function App() {
   const [activeModel, setActiveModel] = useState("");
   const [models, setModels] = useState([]);
 
-  // Load models and default model on mount and when agent changes
+  // Load models when agent changes — each harness returns its own model list
   useEffect(() => {
     // Reset model selection when agent changes
     setActiveModel("");
@@ -85,14 +85,6 @@ export default function App() {
         }
       })
       .catch((err) => console.warn("list_models failed:", err));
-
-    invoke("get_default_model")
-      .then((result) => {
-        if (result) {
-          setActiveModel(result);
-        }
-      })
-      .catch((err) => console.warn("get_default_model failed:", err));
   }, [activeAgent]);
 
   useEffect(() => {

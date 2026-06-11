@@ -80,7 +80,7 @@ pub fn send_prompt(
 
     match agent_name {
         "hermes" => crate::harness_hermes::send(hermes_bin, full_prompt, session_id, cwd, model),
-        "claude" => crate::harness_claude::send(full_prompt, session_id, cwd),
+        "claude" => crate::harness_claude::send(full_prompt, session_id, cwd, model),
         "gemini" => crate::harness_gemini::send(full_prompt, session_id, cwd, model),
         "codex" => crate::harness_codex::send(full_prompt, session_id, cwd, model),
         "antigravity" => crate::harness_antigravity::send(full_prompt, session_id, cwd, model),
@@ -259,51 +259,10 @@ fn collapse_blocks(input: &str) -> String {
     result
 }
 
-/// List available models from the hermes provider cache.
-/// Returns a sorted list of model ID strings.
+/// List available models — delegates to hermes provider cache.
+/// Kept for backward compatibility; prefer list_models_for_agent().
 pub fn list_models() -> Vec<String> {
-    let cache_path = dirs::home_dir()
-        .map(|h| h.join(".hermes").join("provider_models_cache.json"));
-
-    let path = match cache_path {
-        Some(p) if p.exists() => p,
-        _ => return Vec::new(),
-    };
-
-    let contents = match std::fs::read_to_string(&path) {
-        Ok(c) => c,
-        Err(_) => return Vec::new(),
-    };
-
-    // The cache is {"openrouter": {"models": [{"id": "...", ...}, ...], ...}}
-    let parsed: serde_json::Value = match serde_json::from_str(&contents) {
-        Ok(v) => v,
-        Err(_) => return Vec::new(),
-    };
-
-    let mut models = Vec::new();
-
-    if let Some(obj) = parsed.as_object() {
-        for (_provider, provider_data) in obj {
-            // Try "models" key first, then "data"
-            for key in &["models", "data"] {
-                if let Some(model_list) = provider_data.get(*key).and_then(|m| m.as_array()) {
-                    for model in model_list {
-                        // Models can be plain strings or objects with an "id" field
-                        if let Some(id) = model.as_str() {
-                            models.push(id.to_string());
-                        } else if let Some(id) = model.get("id").and_then(|i| i.as_str()) {
-                            models.push(id.to_string());
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    models.sort();
-    models.dedup();
-    models
+    crate::harness_hermes::list_models()
 }
 
 /// Read the current default model from hermes config.yaml.
@@ -314,7 +273,6 @@ pub fn get_default_model() -> Option<String> {
 
     let contents = std::fs::read_to_string(&config_path).ok()?;
 
-    // Simple YAML parsing: find "model:" section, then "default:" line
     let mut in_model_section = false;
     for line in contents.lines() {
         let trimmed = line.trim();
@@ -323,7 +281,6 @@ pub fn get_default_model() -> Option<String> {
             continue;
         }
         if in_model_section {
-            // If we hit a non-indented line, we've left the model section
             if !line.starts_with(' ') && !line.starts_with('\t') && !trimmed.is_empty() {
                 break;
             }
@@ -339,36 +296,19 @@ pub fn get_default_model() -> Option<String> {
     None
 }
 
-/// Return models appropriate for a given agent.
-/// Falls back to the generic Hermes/OpenRouter cache for unknown agents.
+/// Return models for a given agent by dispatching to each harness's list_models().
+/// Each harness is responsible for querying its own CLI/API/config.
 pub fn list_models_for_agent(agent: &str) -> Vec<String> {
     match agent {
-        "hermes" => list_models(),
-        "ollama" => crate::harness_ollama::list_ollama_models(),
-        "claude" => vec![
-            "claude-sonnet-4-20250514".to_string(),
-            "claude-opus-4-20250514".to_string(),
-            "claude-haiku-35-20241022".to_string(),
-        ],
-        "gemini" => vec![
-            "gemini-2.5-pro".to_string(),
-            "gemini-2.5-flash".to_string(),
-            "gemini-2.0-flash".to_string(),
-        ],
-        "antigravity" => vec![
-            "gemini-2.5-pro".to_string(),
-            "gemini-2.5-flash".to_string(),
-            "claude-sonnet-4-20250514".to_string(),
-        ],
-        "codex" => vec![
-            "codex-mini".to_string(),
-            "o4-mini".to_string(),
-            "o3".to_string(),
-        ],
-        // Generic / unknown agents: return OpenRouter cache if available, else empty
-        _ => {
-            let models = list_models();
-            if models.is_empty() { Vec::new() } else { models }
-        }
+        "hermes"       => crate::harness_hermes::list_models(),
+        "claude"       => crate::harness_claude::list_models(),
+        "gemini"       => crate::harness_gemini::list_models(),
+        "codex"        => crate::harness_codex::list_models(),
+        "antigravity"  => crate::harness_antigravity::list_models(),
+        "ollama"       => crate::harness_ollama::list_models(),
+        // Agents without model selection return empty
+        "pi"           => Vec::new(),
+        // Generic / unknown: fall back to hermes cache
+        _              => crate::harness_hermes::list_models(),
     }
 }

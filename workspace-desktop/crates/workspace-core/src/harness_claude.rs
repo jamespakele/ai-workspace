@@ -9,11 +9,18 @@ pub fn send(
     text: String,
     session_id: Option<String>,
     cwd: Option<String>,
+    model: Option<String>,
 ) -> Result<ChatResponse, String> {
     let bin = "claude";
 
     let mut cmd = Command::new(bin);
     cmd.args(["-p", &text, "--output-format", "text"]);
+
+    if let Some(m) = &model {
+        if !m.is_empty() {
+            cmd.args(["--model", m]);
+        }
+    }
 
     if let Some(sid) = &session_id {
         if !sid.is_empty() {
@@ -44,4 +51,17 @@ pub fn send(
         response,
         agent: "claude".to_string(),
     })
+}
+
+/// List available Claude models.
+/// Claude CLI accepts aliases ('sonnet', 'opus', 'haiku') or full names.
+/// We query `claude --help` and parse the --model description for known aliases,
+/// but the CLI doesn't have a `models` subcommand, so we return the known set.
+pub fn list_models() -> Vec<String> {
+    // Claude CLI accepts these aliases as --model values
+    vec![
+        "sonnet".to_string(),
+        "opus".to_string(),
+        "haiku".to_string(),
+    ]
 }

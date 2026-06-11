@@ -47,3 +47,15 @@ pub fn send(
         agent: "gemini".to_string(),
     })
 }
+
+/// List available Gemini models.
+/// The Gemini CLI doesn't have a `models` subcommand, so we return the known
+/// model IDs that it accepts via the `-m` flag.
+pub fn list_models() -> Vec<String> {
+    vec![
+        "gemini-2.5-pro".to_string(),
+        "gemini-2.5-flash".to_string(),
+        "gemini-2.0-flash".to_string(),
+    ]
+}
+

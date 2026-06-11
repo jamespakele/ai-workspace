@@ -48,3 +48,15 @@ pub fn send(
         agent: "codex".to_string(),
     })
 }
+
+/// List available Codex models.
+/// The Codex CLI doesn't have a `models` subcommand, so we return the known
+/// model IDs that it accepts via the `-m` flag.
+pub fn list_models() -> Vec<String> {
+    vec![
+        "codex-mini".to_string(),
+        "o4-mini".to_string(),
+        "o3".to_string(),
+    ]
+}
+

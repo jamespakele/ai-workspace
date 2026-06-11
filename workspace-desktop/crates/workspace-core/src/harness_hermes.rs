@@ -94,3 +94,49 @@ fn parse_quiet_output(raw: &str) -> Result<ChatResponse, String> {
         agent: "hermes".to_string(),
     })
 }
+
+/// List available models from the hermes provider cache (OpenRouter).
+/// Returns a sorted list of model ID strings.
+pub fn list_models() -> Vec<String> {
+    let cache_path = dirs::home_dir()
+        .map(|h| h.join(".hermes").join("provider_models_cache.json"));
+
+    let path = match cache_path {
+        Some(p) if p.exists() => p,
+        _ => return Vec::new(),
+    };
+
+    let contents = match std::fs::read_to_string(&path) {
+        Ok(c) => c,
+        Err(_) => return Vec::new(),
+    };
+
+    // The cache is {"openrouter": {"models": [{"id": "...", ...}, ...], ...}}
+    let parsed: serde_json::Value = match serde_json::from_str(&contents) {
+        Ok(v) => v,
+        Err(_) => return Vec::new(),
+    };
+
+    let mut models = Vec::new();
+
+    if let Some(obj) = parsed.as_object() {
+        for (_provider, provider_data) in obj {
+            for key in &["models", "data"] {
+                if let Some(model_list) = provider_data.get(*key).and_then(|m| m.as_array()) {
+                    for model in model_list {
+                        if let Some(id) = model.as_str() {
+                            models.push(id.to_string());
+                        } else if let Some(id) = model.get("id").and_then(|i| i.as_str()) {
+                            models.push(id.to_string());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    models.sort();
+    models.dedup();
+    models
+}
+
